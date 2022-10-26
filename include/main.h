@@ -17,7 +17,7 @@
 #define TEXT_CHAR_SPACING 2      // Amount of pixels between every character in drawn text
 #define GUI_HEIGHT 150           // Height of the gui
 #define EXTRA_SPACE_THRESHOLD 2  // The dimension at which axtra space
-#define BOMB -1                  // Value of a bomb
+#define MINE -1                  // Value of a mine
 #define OUT_OF_BOUNDS -1         // Value set if index is out of bounds or not relevant
 
 // Cell structure to store its information
@@ -25,7 +25,7 @@ struct cell
 {
     Vector2 coords;     // Coordinates of the cell
     Vector2 drawCoords; // Coordinates at which the cell has to be drawn
-    int value;          // Number of neighbors that are bombs
+    int value;          // Number of neighbors that are mines
     bool visible;       // State of the cell (revealed or not)
     bool flagged;       // State of the cell (flagged or not)
 
@@ -176,11 +176,11 @@ void highlightNeighbors();                        // Highlights all the neighbor
 void setupGame();                                 // Prepares everything for a new game
 void setupBoard();                                // Sets up all the coordinates of the cells
 int getTotalSize(int);                            // Calculates the total number of cells
-int getNewTotalSize(int);                         // Calculates the total number of cells (only used for gui, when dimension is changed the max bombs also needs to change)
+int getNewTotalSize(int);                         // Calculates the total number of cells (only used for gui, when dimension is changed the max mines also needs to change)
 int getSubtraction(int, int);                     // Calculates the amount of subtraction needed
 void getNeighbors(int *, int, int *, int, int *); // Calculates all the given cell its neighbors based on the index
 int *getTrueNeighbors(int);                       // Removes all the out of bounds neighbors gotton from getNeighbors
-void generateBombs(int);                          // Generates all the bombs
+void generateMines(int);                          // Generates all the mines
 void win();                                       // Handles everything after a winning
 void gameover();                                  // Handles everything after a losing
 int abs(int);                                     // Returns the positive version of the given number

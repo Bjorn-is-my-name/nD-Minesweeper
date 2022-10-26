@@ -4,28 +4,27 @@
 #include <raygui.h>           // For all the gui options
 #include <main.h>             // For all the defines, typedefines, structs, classes and function presets
 #include <string>             // For converting to const char * (c_str())
-#include <iostream>
 
 // Game variables
 int dimension;                                                                                           // Dimension in which the game is played
 int *dimensionSizes; /*minimum should be 1 but is 3 on dim 1 and 2 cuz still a bug in getTrueNeighbors*/ // Sizes of each dimension (width, length, depth etc...)
 int cells;                                                                                               // Total number of cells
 cell *board;                                                                                             // Board which stores all the cells
-int bombs;                                                                                               // Number of bombs
-int flaggedBombs;                                                                                        // The number of bombs flagged
+int mine;                                                                                                // Number of mines
+int flaggedMines;                                                                                        // The number of mines flagged
 int cellsize;                                                                                            // Changeable cellsize by scrolling
 int xOffset;                                                                                             // X offset for moving the board around
 int yOffset;                                                                                             // Y offset for moving the board around
 bool playing = false;                                                                                    // To keep track of the game state
 bool drawingMode = false;                                                                                // Switch between playing/flagging and moving/drawing
-bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate bombs after to always start with a 0
+bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)
 int newDimensionOld = 1;                      // The dimension for next game before changed by user (used to copy dimension sizes as the dimension changes)
 int newDimensionSizesDimension = 1;           // The dimension of which the size is changeable (changeable in the gui)
 int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
-int newBombs = 0;                             // the number of bombs for next game
+int newMines = 0;                             // the number of mines for next game
 
 int main(void)
 {
@@ -92,7 +91,7 @@ void update()
                 int cellIndex = getCellIndexFromMouse();
                 if (cellIndex != OUT_OF_BOUNDS)
                 {
-                    generateBombs(cellIndex);
+                    generateMines(cellIndex);
                     firstCellRevealed = true;
                 }
             }
@@ -114,10 +113,10 @@ void revealCells()
     board[cellIndex].visible = true;
     board[cellIndex].flagged = false;
 
-    // If the cell is a bomb, the player loses
-    if (board[cellIndex].value == BOMB)
+    // If the cell is a mine, the player loses
+    if (board[cellIndex].value == MINE)
         gameover();
-    // If the cell has no neighbors that are bombs, reveal them
+    // If the cell has no neighbors that are mines, reveal them
     else if (board[cellIndex].value == 0)
         revealNeighbors(cellIndex);
 }
@@ -150,21 +149,21 @@ void flagCell()
     if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible)
         return;
 
-    // Flag or unflag the cell and update the flaggedBombs counter if the cell was a bomb
+    // Flag or unflag the cell and update the flaggedMines counter if the cell was a mine
     if (board[cellIndex].flagged)
     {
         board[cellIndex].flagged = false;
 
-        if (board[cellIndex].value == BOMB)
-            flaggedBombs--;
+        if (board[cellIndex].value == MINE)
+            flaggedMines--;
     }
     else
     {
         board[cellIndex].flagged = true;
 
-        // If the last bombs is flagged, the player wins
-        if (board[cellIndex].value == BOMB)
-            if (++flaggedBombs == bombs)
+        // If the last mines is flagged, the player wins
+        if (board[cellIndex].value == MINE)
+            if (++flaggedMines == mine)
                 win();
     }
 }
@@ -329,8 +328,8 @@ void drawGui()
     Rectangle guiDimensionSizesDimension = {400, 80, 100, 50};
     Rectangle guiDimensionSizesValueLabel = {550, 30, 50, 50};
     Rectangle guiDimensionSizesValue = {550, 80, 50, 50};
-    Rectangle guiBombsLabel = {700, 30, 50, 50};
-    Rectangle guiBombs = {700, 80, 50, 50};
+    Rectangle guiMinesLabel = {700, 30, 50, 50};
+    Rectangle guiMines = {700, 80, 50, 50};
     Rectangle guiStart = {800, 50, 50, 50};
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
@@ -397,15 +396,15 @@ void drawGui()
         10,
         !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesValue));
 
-    // Bombs
-    GuiLabel(guiBombsLabel, "Bombs");
+    // Mines
+    GuiLabel(guiMinesLabel, "Mines");
     GuiValueBox(
-        guiBombs,
+        guiMines,
         "",
-        &newBombs,
+        &newMines,
         0,
         getNewTotalSize(newDimension) - 1,
-        !playing && CheckCollisionPointRec(mousePosition, guiBombs));
+        !playing && CheckCollisionPointRec(mousePosition, guiMines));
 
     // Start button
     if (GuiButton(guiStart, playing ? "Stop" : "Start"))
@@ -481,8 +480,8 @@ void setupGame()
     delete[] board;
     board = new cell[cells];
 
-    bombs = newBombs;
-    flaggedBombs = 0;
+    mine = newMines;
+    flaggedMines = 0;
     cellsize = DEFAULT_CELLSIZE;
     xOffset = 50;
     yOffset = 50 + GUI_HEIGHT;
@@ -637,9 +636,9 @@ int *getTrueNeighbors(int cellIndex)
     return trueNeighbors;
 }
 
-void generateBombs(int cellIndex)
+void generateMines(int cellIndex)
 {
-    // Generate all the bombs
+    // Generate all the mines
 
     // Keep track of the free spots
     DoublyLinkedList freeSpots;
@@ -647,14 +646,14 @@ void generateBombs(int cellIndex)
         freeSpots.add(i);
     freeSpots.remove(cellIndex);
 
-    for (int i = 0; i < bombs; i++)
+    for (int i = 0; i < mine; i++)
     {
-        // Set a random cell as bomb
+        // Set a random cell as mine
         int cell = GetRandomValue(0, freeSpots.len() - 1);
         int randomCell = freeSpots.get(cell);
         freeSpots.remove(cell);
 
-        board[randomCell].value = BOMB;
+        board[randomCell].value = MINE;
 
         // Increment the value of all the cell its neighbors
         int *neighbors = getTrueNeighbors(randomCell);
@@ -663,7 +662,7 @@ void generateBombs(int cellIndex)
         {
             if (neighbors[j] != OUT_OF_BOUNDS)
             {
-                if (board[neighbors[j]].value != BOMB)
+                if (board[neighbors[j]].value != MINE)
                 {
                     board[neighbors[j]].value++;
                 }
@@ -673,7 +672,7 @@ void generateBombs(int cellIndex)
         delete[] neighbors;
         neighbors = nullptr;
     }
-    std::cout << "made it";
+
     freeSpots.empty();
 }
 
