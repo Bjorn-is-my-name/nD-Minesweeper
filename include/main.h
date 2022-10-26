@@ -17,6 +17,8 @@
 #define TEXT_CHAR_SPACING 2      // Amount of pixels between every character in drawn text
 #define GUI_HEIGHT 150           // Height of the gui
 #define EXTRA_SPACE_THRESHOLD 2  // The dimension at which axtra space
+#define BOMB -1                  // Value of a bomb
+#define OUT_OF_BOUNDS -1         // Value set if index is out of bounds or not relevant
 
 // Cell structure to store its information
 struct cell
@@ -111,9 +113,17 @@ public:
 
         if (index == 0)
         {
-            head = n->next;
-            head->prev = NULL;
-            delete n;
+            if (head->next != NULL)
+            {
+                head = n->next;
+                head->prev = NULL;
+                delete n;
+            }
+            else
+            {
+                delete n;
+                head = NULL;
+            }
             return;
         }
 

@@ -4,6 +4,7 @@
 #include <raygui.h>           // For all the gui options
 #include <main.h>             // For all the defines, typedefines, structs, classes and function presets
 #include <string>             // For converting to const char * (c_str())
+#include <iostream>
 
 // Game variables
 int dimension;                                                                                           // Dimension in which the game is played
@@ -79,23 +80,25 @@ void update()
     }
     else
     {
-        if (!firstCellRevealed)
-        {
-            int cellIndex = getCellIndexFromMouse();
-            if (cellIndex != -1)
-            {
-                generateBombs(cellIndex);
-                firstCellRevealed = true;
-            }
-        }
-
         // Flag the clicked cell
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
             flagCell();
 
         // Reveal the clicked cell
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+        {
+            if (!firstCellRevealed)
+            {
+                int cellIndex = getCellIndexFromMouse();
+                if (cellIndex != OUT_OF_BOUNDS)
+                {
+                    generateBombs(cellIndex);
+                    firstCellRevealed = true;
+                }
+            }
+
             revealCells();
+        }
     }
 }
 
@@ -104,7 +107,7 @@ void revealCells()
     int cellIndex = getCellIndexFromMouse();
 
     // Return if no cell is clicked or it is already visible
-    if (cellIndex == -1 || board[cellIndex].visible)
+    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible)
         return;
 
     // If the cell is flagged, remove the flag
@@ -112,7 +115,7 @@ void revealCells()
     board[cellIndex].flagged = false;
 
     // If the cell is a bomb, the player loses
-    if (board[cellIndex].value == -1)
+    if (board[cellIndex].value == BOMB)
         gameover();
     // If the cell has no neighbors that are bombs, reveal them
     else if (board[cellIndex].value == 0)
@@ -126,7 +129,7 @@ void revealNeighbors(int cellIndex)
 
     for (int i = pow(3, dimension) - 1; i >= 0; i--)
     {
-        if (neighbors[i] != -1 && !board[neighbors[i]].visible)
+        if (neighbors[i] != OUT_OF_BOUNDS && !board[neighbors[i]].visible)
         {
             board[neighbors[i]].visible = true;
 
@@ -144,7 +147,7 @@ void flagCell()
     int cellIndex = getCellIndexFromMouse();
 
     // Return if no cell is clicked or it is already visible
-    if (cellIndex == -1 || board[cellIndex].visible)
+    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible)
         return;
 
     // Flag or unflag the cell and update the flaggedBombs counter if the cell was a bomb
@@ -152,7 +155,7 @@ void flagCell()
     {
         board[cellIndex].flagged = false;
 
-        if (board[cellIndex].value == -1)
+        if (board[cellIndex].value == BOMB)
             flaggedBombs--;
     }
     else
@@ -160,7 +163,7 @@ void flagCell()
         board[cellIndex].flagged = true;
 
         // If the last bombs is flagged, the player wins
-        if (board[cellIndex].value == -1)
+        if (board[cellIndex].value == BOMB)
             if (++flaggedBombs == bombs)
                 win();
     }
@@ -401,7 +404,7 @@ void drawGui()
         "",
         &newBombs,
         0,
-        getNewTotalSize(newDimension),
+        getNewTotalSize(newDimension) - 1,
         !playing && CheckCollisionPointRec(mousePosition, guiBombs));
 
     // Start button
@@ -418,7 +421,7 @@ int getCellIndexFromMouse()
 {
     // Get the index of the cell the mouse is hovering over
     Vector2 mouse = GetMousePosition();
-    int cellIndex = -1;
+    int cellIndex = OUT_OF_BOUNDS;
 
     for (int i = 0; i < cells; i++)
     {
@@ -437,13 +440,13 @@ void highlightNeighbors()
     // Highlight all neighbors of the cell hovered over
     int cellIndex = getCellIndexFromMouse();
 
-    if (cellIndex != -1)
+    if (cellIndex != OUT_OF_BOUNDS)
     {
         int *neighbors = getTrueNeighbors(cellIndex);
 
         for (int i = pow(3, dimension) - 1; i >= 0; i--)
         {
-            if (neighbors[i] != -1)
+            if (neighbors[i] != OUT_OF_BOUNDS)
             {
                 DrawRectangleLinesEx(
                     Rectangle{
@@ -603,7 +606,7 @@ int *getTrueNeighbors(int cellIndex)
 
     int *trueNeighbors = new int[counter];
     for (int i = 0; i < counter; i++)
-        trueNeighbors[i] = -1;
+        trueNeighbors[i] = OUT_OF_BOUNDS;
 
     for (int i = 0; i < counter; i++)
     {
@@ -637,8 +640,6 @@ int *getTrueNeighbors(int cellIndex)
 void generateBombs(int cellIndex)
 {
     // Generate all the bombs
-    if (bombs > cells)
-        bombs = cells;
 
     // Keep track of the free spots
     DoublyLinkedList freeSpots;
@@ -653,16 +654,16 @@ void generateBombs(int cellIndex)
         int randomCell = freeSpots.get(cell);
         freeSpots.remove(cell);
 
-        board[randomCell].value = -1;
+        board[randomCell].value = BOMB;
 
         // Increment the value of all the cell its neighbors
         int *neighbors = getTrueNeighbors(randomCell);
 
         for (int j = pow(3, dimension) - 1; j >= 0; j--)
         {
-            if (neighbors[j] != -1)
+            if (neighbors[j] != OUT_OF_BOUNDS)
             {
-                if (board[neighbors[j]].value != -1)
+                if (board[neighbors[j]].value != BOMB)
                 {
                     board[neighbors[j]].value++;
                 }
@@ -672,7 +673,7 @@ void generateBombs(int cellIndex)
         delete[] neighbors;
         neighbors = nullptr;
     }
-
+    std::cout << "made it";
     freeSpots.empty();
 }
 
