@@ -210,46 +210,50 @@ void draw()
     EndDrawing();
 }
 
-void drawBoard(int cell, int fontsize)
+void drawBoard(int cellIndex, int fontsize)
 {
+    // Check if the cell is on the screen
+    if (!cellOnScreen(cellIndex))
+        return;
+
     // If the cell is visible color it based on its value, else make it gray
-    Color color = (board[cell].visible) ? color = {255, (unsigned char)(255 - std::min(board[cell].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cell].value / 2, 10) * 25), 255} : GRAY;
+    Color color = (board[cellIndex].visible) ? color = {255, (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), 255} : GRAY;
 
     // Draw the cell
     DrawRectangle(
-        board[cell].drawCoords.x + xOffset,
-        board[cell].drawCoords.y + yOffset,
+        board[cellIndex].drawCoords.x + xOffset,
+        board[cellIndex].drawCoords.y + yOffset,
         cellsize,
         cellsize,
         color);
 
     // If the cell is flagged, draw a little flag
-    if (board[cell].flagged)
+    if (board[cellIndex].flagged)
     {
         DrawRectangle(
-            board[cell].drawCoords.x + cellsize / 4 + xOffset,
-            board[cell].drawCoords.y + yOffset,
+            board[cellIndex].drawCoords.x + cellsize / 4 + xOffset,
+            board[cellIndex].drawCoords.y + yOffset,
             cellsize / 10 + 0.5f,
             cellsize,
             BLACK);
 
         DrawTriangle(
             Vector2{
-                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
-                board[cell].drawCoords.y + yOffset},
+                board[cellIndex].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
+                board[cellIndex].drawCoords.y + yOffset},
             Vector2{
-                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
-                board[cell].drawCoords.y + cellsize / 2 + yOffset},
+                board[cellIndex].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
+                board[cellIndex].drawCoords.y + cellsize / 2 + yOffset},
             Vector2{
-                board[cell].drawCoords.x + cellsize * 0.9f + xOffset,
-                board[cell].drawCoords.y + cellsize / 4 + yOffset},
+                board[cellIndex].drawCoords.x + cellsize * 0.9f + xOffset,
+                board[cellIndex].drawCoords.y + cellsize / 4 + yOffset},
             RED);
     }
 
     // Only draw the value if the cell is visible and the value is not 0
-    if (board[cell].visible && cellsize > MIN_CELLSIZE_FOR_TEXT && board[cell].value != 0)
+    if (board[cellIndex].visible && cellsize > MIN_CELLSIZE_FOR_TEXT && board[cellIndex].value != 0)
     {
-        std::string text = (board[cell].value > 99) ? "99+" : std::to_string(board[cell].value);
+        std::string text = (board[cellIndex].value > 99) ? "99+" : std::to_string(board[cellIndex].value);
 
         // Measure the text size to be able to center the value in the square
         Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), fontsize, TEXT_CHAR_SPACING);
@@ -259,12 +263,17 @@ void drawBoard(int cell, int fontsize)
             GetFontDefault(),
             text.c_str(),
             Vector2{
-                board[cell].drawCoords.x + ((cellsize / 2) - (textSize.x / 2)) + xOffset,
-                board[cell].drawCoords.y + ((cellsize / 2) - (textSize.y / 2)) + yOffset},
+                board[cellIndex].drawCoords.x + ((cellsize / 2) - (textSize.x / 2)) + xOffset,
+                board[cellIndex].drawCoords.y + ((cellsize / 2) - (textSize.y / 2)) + yOffset},
             fontsize,
             TEXT_CHAR_SPACING,
             BLACK);
     }
+}
+
+bool cellOnScreen(int cellIndex)
+{
+    return board[cellIndex].drawCoords.x + cellsize + xOffset > 0 && board[cellIndex].drawCoords.x + xOffset < WINDOW_WIDTH && board[cellIndex].drawCoords.y + cellsize + yOffset > GUI_HEIGHT && board[cellIndex].drawCoords.y + yOffset < WINDOW_HEIGHT;
 }
 
 void calculateDrawCoords()
@@ -350,7 +359,7 @@ void drawGui()
             "",
             &newDimension,
             1,
-            10,
+            INT_MAX,
             !playing && CheckCollisionPointRec(mousePosition, guiDimension)))
     {
         // If the dimension is changed, update dimensionSizes but keep already set values intact
@@ -399,7 +408,7 @@ void drawGui()
         "",
         &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : ((newDimensionSizesDimension <= 0 || newDimension == 0) ? 0 : newDimension - 1)],
         1,
-        1000,
+        INT_MAX,
         !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
 
     // Mines
@@ -460,7 +469,7 @@ void highlightNeighbors()
 
         for (int i = pow(3, dimension) - 1; i >= 0; i--)
         {
-            if (neighbors[i] != OUT_OF_BOUNDS)
+            if (neighbors[i] != OUT_OF_BOUNDS && cellOnScreen(neighbors[i]))
             {
                 DrawRectangleLinesEx(
                     Rectangle{
