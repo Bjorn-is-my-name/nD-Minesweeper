@@ -172,6 +172,7 @@ void drawBoard(int, int);                         // Draws all the cells
 void calculateDrawCoords();                       // Calculates all the coordinates the cells have to be draw at and calls drawBoard
 void drawGui();                                   // Draws the gui
 int getCellIndexFromMouse();                      // Returns the index of the cell the mouse is hovering on
+bool mouseInCellBounds(int);                      // Checks if the mouse is between the borders of given cell
 void highlightNeighbors();                        // Highlights all the neighbors of the cell the mouse is hovering over
 void setupGame();                                 // Prepares everything for a new game
 void setupBoard();                                // Sets up all the coordinates of the cells

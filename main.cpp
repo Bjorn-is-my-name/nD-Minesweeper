@@ -56,12 +56,17 @@ void update()
     if (!playing && GetMousePosition().y > GUI_HEIGHT)
         return;
 
-    // If the mouse wheel is moved, zoom in or out
+    // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
     Vector2 mouseWheelMovement = GetMouseWheelMoveV();
-    if (mouseWheelMovement.y > 0 && cellsize < MAX_CELLSIZE)
-        cellsize++;
-    else if (mouseWheelMovement.y < 0 && cellsize > MIN_CELLSIZE)
-        cellsize--;
+    if (mouseWheelMovement.y != 0)
+    {
+        if (mouseWheelMovement.y > 0 && cellsize < MAX_CELLSIZE)
+            cellsize++;
+        else if (mouseWheelMovement.y < 0 && cellsize > MIN_CELLSIZE)
+            cellsize--;
+
+        calculateDrawCoords();
+    }
 
     // Turn drawing mode on or off
     if (playing && IsKeyReleased(KEY_D))
@@ -177,7 +182,21 @@ void draw()
     // Draw all the cells and highlight if hovered over
     if (dimension != NULL)
     {
-        calculateDrawCoords();
+        // Set the font size so the value fits in the cell
+        int fontsize = 1;
+
+        if (cellsize > MIN_CELLSIZE_FOR_TEXT)
+        {
+            // Increase the font size until the text no longer fits
+            Vector2 textSize = MeasureTextEx(GetFontDefault(), "99+", fontsize, TEXT_CHAR_SPACING);
+            while (std::max(textSize.x, textSize.y) < cellsize - HIGHLIGHT_BORDER_SIZE)
+                textSize = MeasureTextEx(GetFontDefault(), "99+", ++fontsize, TEXT_CHAR_SPACING);
+        }
+
+        // Draw all the cells
+        for (int i = 0; i < cells; i++)
+            drawBoard(i, fontsize);
+
         highlightNeighbors();
     }
 
@@ -198,8 +217,8 @@ void drawBoard(int cell, int fontsize)
 
     // Draw the cell
     DrawRectangle(
-        board[cell].drawCoords.x,
-        board[cell].drawCoords.y,
+        board[cell].drawCoords.x + xOffset,
+        board[cell].drawCoords.y + yOffset,
         cellsize,
         cellsize,
         color);
@@ -208,22 +227,22 @@ void drawBoard(int cell, int fontsize)
     if (board[cell].flagged)
     {
         DrawRectangle(
-            board[cell].drawCoords.x + cellsize / 4,
-            board[cell].drawCoords.y,
+            board[cell].drawCoords.x + cellsize / 4 + xOffset,
+            board[cell].drawCoords.y + yOffset,
             cellsize / 10 + 0.5f,
             cellsize,
             BLACK);
 
         DrawTriangle(
             Vector2{
-                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10,
-                board[cell].drawCoords.y},
+                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
+                board[cell].drawCoords.y + yOffset},
             Vector2{
-                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10,
-                board[cell].drawCoords.y + cellsize / 2},
+                board[cell].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
+                board[cell].drawCoords.y + cellsize / 2 + yOffset},
             Vector2{
-                board[cell].drawCoords.x + cellsize * 0.9f,
-                board[cell].drawCoords.y + cellsize / 4},
+                board[cell].drawCoords.x + cellsize * 0.9f + xOffset,
+                board[cell].drawCoords.y + cellsize / 4 + yOffset},
             RED);
     }
 
@@ -240,8 +259,8 @@ void drawBoard(int cell, int fontsize)
             GetFontDefault(),
             text.c_str(),
             Vector2{
-                board[cell].drawCoords.x + ((cellsize / 2) - (textSize.x / 2)),
-                board[cell].drawCoords.y + ((cellsize / 2) - (textSize.y / 2))},
+                board[cell].drawCoords.x + ((cellsize / 2) - (textSize.x / 2)) + xOffset,
+                board[cell].drawCoords.y + ((cellsize / 2) - (textSize.y / 2)) + yOffset},
             fontsize,
             TEXT_CHAR_SPACING,
             BLACK);
@@ -259,17 +278,6 @@ void calculateDrawCoords()
 
     for (int i = 1; i < dimension; i++)
         sizes[i] = dimensionSizes[i] - 1;
-
-    // Set the font size so the value fits in the cell
-    int fontsize = 1;
-
-    if (cellsize > MIN_CELLSIZE_FOR_TEXT)
-    {
-        // Increase the font size until the text no longer fits
-        Vector2 textSize = MeasureTextEx(GetFontDefault(), "99+", fontsize, TEXT_CHAR_SPACING);
-        while (std::max(textSize.x, textSize.y) < cellsize - HIGHLIGHT_BORDER_SIZE)
-            textSize = MeasureTextEx(GetFontDefault(), "99+", ++fontsize, TEXT_CHAR_SPACING);
-    }
 
     for (int i = 0; i < cells; i++)
     {
@@ -309,10 +317,8 @@ void calculateDrawCoords()
         }
 
         // Set the drawing coords
-        board[i].drawCoords.x = board[i].coords.x * (cellsize + GAP_BETWEEN_CELLS) + (x * GAP_BETWEEN_DIMENSIONS) + xOffset;
-        board[i].drawCoords.y = board[i].coords.y * (cellsize + GAP_BETWEEN_CELLS) + (y * GAP_BETWEEN_DIMENSIONS) + yOffset;
-
-        drawBoard(i, fontsize);
+        board[i].drawCoords.x = board[i].coords.x * (cellsize + GAP_BETWEEN_CELLS) + (x * GAP_BETWEEN_DIMENSIONS);
+        board[i].drawCoords.y = board[i].coords.y * (cellsize + GAP_BETWEEN_CELLS) + (y * GAP_BETWEEN_DIMENSIONS);
     }
 }
 
@@ -402,7 +408,7 @@ void drawGui()
         guiMines,
         "",
         &newMines,
-        0,
+        1,
         getNewTotalSize(newDimension) - 1,
         !playing && CheckCollisionPointRec(mousePosition, guiMines));
 
@@ -419,12 +425,12 @@ void drawGui()
 int getCellIndexFromMouse()
 {
     // Get the index of the cell the mouse is hovering over
-    Vector2 mouse = GetMousePosition();
+    mousePosition = GetMousePosition();
     int cellIndex = OUT_OF_BOUNDS;
 
     for (int i = 0; i < cells; i++)
     {
-        if (mouse.x >= board[i].drawCoords.x && mouse.x <= board[i].drawCoords.x + cellsize + GAP_BETWEEN_CELLS && mouse.y >= board[i].drawCoords.y && mouse.y <= board[i].drawCoords.y + cellsize + GAP_BETWEEN_CELLS)
+        if (mouseInCellBounds(i))
         {
             cellIndex = i;
             break;
@@ -432,6 +438,12 @@ int getCellIndexFromMouse()
     }
 
     return cellIndex;
+}
+
+bool mouseInCellBounds(int cellIndex)
+{
+    // Check if the mouse positions is in the cell
+    return mousePosition.x >= board[cellIndex].drawCoords.x + xOffset && mousePosition.x <= board[cellIndex].drawCoords.x + cellsize + GAP_BETWEEN_CELLS + xOffset && mousePosition.y >= board[cellIndex].drawCoords.y + yOffset && mousePosition.y <= board[cellIndex].drawCoords.y + cellsize + GAP_BETWEEN_CELLS + yOffset;
 }
 
 void highlightNeighbors()
@@ -449,8 +461,8 @@ void highlightNeighbors()
             {
                 DrawRectangleLinesEx(
                     Rectangle{
-                        board[neighbors[i]].drawCoords.x,
-                        board[neighbors[i]].drawCoords.y,
+                        board[neighbors[i]].drawCoords.x + xOffset,
+                        board[neighbors[i]].drawCoords.y + yOffset,
                         (float)cellsize,
                         (float)cellsize},
                     HIGHLIGHT_BORDER_SIZE,
@@ -488,6 +500,7 @@ void setupGame()
     drawingMode = false;
 
     setupBoard();
+    calculateDrawCoords();
 }
 
 void setupBoard()
