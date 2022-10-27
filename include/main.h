@@ -15,7 +15,7 @@
 #define MIN_CELLSIZE 5           // Minimum cellsize
 #define MIN_CELLSIZE_FOR_TEXT 20 // Minimum cellsize for the cell its value to be shown
 #define TEXT_CHAR_SPACING 2      // Amount of pixels between every character in drawn text
-#define GUI_HEIGHT 150           // Height of the gui
+#define GUI_HEIGHT 200           // Height of the gui
 #define EXTRA_SPACE_THRESHOLD 2  // The dimension at which axtra space
 #define MINE -1                  // Value of a mine
 #define OUT_OF_BOUNDS -1         // Value set if index is out of bounds or not relevant

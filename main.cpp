@@ -10,7 +10,7 @@ int dimension;                                                                  
 int *dimensionSizes; /*minimum should be 1 but is 3 on dim 1 and 2 cuz still a bug in getTrueNeighbors*/ // Sizes of each dimension (width, length, depth etc...)
 int cells;                                                                                               // Total number of cells
 cell *board;                                                                                             // Board which stores all the cells
-int mine;                                                                                                // Number of mines
+int mines;                                                                                               // Number of mines
 int flaggedMines;                                                                                        // The number of mines flagged
 int cellsize;                                                                                            // Changeable cellsize by scrolling
 int xOffset;                                                                                             // X offset for moving the board around
@@ -24,7 +24,7 @@ int newDimension = 1;                         // The dimension for next game (ch
 int newDimensionOld = 1;                      // The dimension for next game before changed by user (used to copy dimension sizes as the dimension changes)
 int newDimensionSizesDimension = 1;           // The dimension of which the size is changeable (changeable in the gui)
 int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
-int newMines = 0;                             // the number of mines for next game
+int newMines = 1;                             // the number of mines for next game
 
 int main(void)
 {
@@ -168,7 +168,7 @@ void flagCell()
 
         // If the last mines is flagged, the player wins
         if (board[cellIndex].value == MINE)
-            if (++flaggedMines == mine)
+            if (++flaggedMines == mines)
                 win();
     }
 }
@@ -332,8 +332,8 @@ void drawGui()
     Rectangle guiDimension = {200, 80, 50, 50};
     Rectangle guiDimensionSizesDimensionLabel = {400, 30, 100, 50};
     Rectangle guiDimensionSizesDimension = {400, 80, 100, 50};
-    Rectangle guiDimensionSizesValueLabel = {550, 30, 50, 50};
-    Rectangle guiDimensionSizesValue = {550, 80, 50, 50};
+    Rectangle guiDimensionSizesValuesLabel = {550, 30, 50, 50};
+    Rectangle guiDimensionSizesValues = {550, 80, 50, 50};
     Rectangle guiMinesLabel = {700, 30, 50, 50};
     Rectangle guiMines = {700, 80, 50, 50};
     Rectangle guiStart = {800, 50, 50, 50};
@@ -393,14 +393,14 @@ void drawGui()
         !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesDimension));
 
     // DimensionSizes size
-    GuiLabel(guiDimensionSizesValueLabel, "Size");
+    GuiLabel(guiDimensionSizesValuesLabel, "Size");
     GuiValueBox(
-        guiDimensionSizesValue,
+        guiDimensionSizesValues,
         "",
-        &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : 0],
+        &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : ((newDimensionSizesDimension <= 0 || newDimension == 0) ? 0 : newDimension - 1)],
         1,
-        10,
-        !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesValue));
+        1000,
+        !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
 
     // Mines
     GuiLabel(guiMinesLabel, "Mines");
@@ -409,7 +409,7 @@ void drawGui()
         "",
         &newMines,
         1,
-        getNewTotalSize(newDimension) - 1,
+        getNewTotalSize(newDimension),
         !playing && CheckCollisionPointRec(mousePosition, guiMines));
 
     // Start button
@@ -425,6 +425,9 @@ void drawGui()
 int getCellIndexFromMouse()
 {
     // Get the index of the cell the mouse is hovering over
+    if (GetMousePosition().y < GUI_HEIGHT)
+        return -1;
+
     mousePosition = GetMousePosition();
     int cellIndex = OUT_OF_BOUNDS;
 
@@ -492,7 +495,7 @@ void setupGame()
     delete[] board;
     board = new cell[cells];
 
-    mine = newMines;
+    mines = newMines;
     flaggedMines = 0;
     cellsize = DEFAULT_CELLSIZE;
     xOffset = 50;
@@ -565,14 +568,15 @@ int getNewTotalSize(int n)
 {
     // Multiply all the new dimension sizes to get the total number of cells
     if (n == 0)
-        return 0;
+        return newMines;
 
     int totalSize = newDimensionSizesValues[0];
 
     for (int i = 1; i < n; i++)
         totalSize *= newDimensionSizesValues[i];
 
-    return totalSize;
+    // If 0 then a dimension value is being changed, keep the old value
+    return (totalSize < 1) ? newMines : totalSize;
 }
 
 int getSubtraction(int start, int stop)
@@ -657,9 +661,11 @@ void generateMines(int cellIndex)
     DoublyLinkedList freeSpots;
     for (int i = 0; i < cells; i++)
         freeSpots.add(i);
-    freeSpots.remove(cellIndex);
 
-    for (int i = 0; i < mine; i++)
+    if (mines < cells)
+        freeSpots.remove(cellIndex);
+
+    for (int i = 0; i < mines; i++)
     {
         // Set a random cell as mine
         int cell = GetRandomValue(0, freeSpots.len() - 1);
