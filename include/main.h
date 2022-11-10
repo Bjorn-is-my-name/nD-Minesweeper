@@ -127,6 +127,7 @@ public:
     void empty()
     {
         node *n;
+        size = 0;
 
         while (head != NULL)
         {

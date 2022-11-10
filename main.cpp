@@ -75,7 +75,9 @@ Color colors[] = {
     Color{255, 255, 255, 255},
     Color{136, 0, 68, 255},
     Color{68, 68, 68, 255},
-    Color{0, 0, 0, 255}};
+    Color{92, 64, 51, 255}};
+
+DoublyLinkedList colorFilter;
 
 main(void)
 {
@@ -147,6 +149,28 @@ void update()
 
         if (IsKeyPressed(KEY_D))
             selectedColor += (selectedColor > 20) ? -21 : 3;
+
+        // Add or remove color from color filter
+        if (IsKeyPressed(KEY_F))
+        {
+            bool alreadyIn = false;
+            int colorIndex;
+
+            for (int i = colorFilter.len() - 1; i >= 0; i--)
+            {
+                if (colorFilter.get(i) == selectedColor)
+                {
+                    colorIndex = i;
+                    alreadyIn = true;
+                    break;
+                }
+            }
+
+            if (alreadyIn)
+                colorFilter.remove(colorIndex);
+            else
+                colorFilter.add(selectedColor);
+        }
 
         // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
         Vector2 mouseWheelMovement = GetMouseWheelMoveV();
@@ -394,8 +418,25 @@ void drawBoard(int cellIndex, int fontsize)
     if (!cellOnScreen(cellIndex))
         return;
 
+    // Change the opacity if the cell has no label that is part of the color filter
+    unsigned char opacity = 255;
+
+    for (int i = colorFilter.len() - 1; i >= 0; i--)
+    {
+        for (int j = board[cellIndex].labels.len() - 1; j >= 0; j--)
+        {
+            if (board[cellIndex].labels.get(j) == colorFilter.get(i))
+            {
+                opacity = 50;
+                break;
+            }
+        }
+        if (opacity == 50)
+            break;
+    }
+
     // If the cell is visible color it based on its value, else make it gray
-    Color color = (board[cellIndex].visible) ? color = {255, (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), 255} : GRAY;
+    Color color = (board[cellIndex].visible) ? color = {255, (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), opacity} : Color{130, 130, 130, opacity};
 
     // Draw the cell
     DrawRectangle(
@@ -451,13 +492,25 @@ void drawBoard(int cellIndex, int fontsize)
 
 void drawSettings()
 {
+    // Draw the border
     DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
+
+    // Draw te title
+    int textWidth = MeasureText("Settings", 70);
+    DrawText(
+        "Settings",
+        WINDOW_WIDTH / 2 - textWidth / 2,
+        50,
+        70,
+        GRAY);
 }
 
 void drawControls()
 {
+    // Draw the border
     DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
 
+    // Draw the title
     int textWidth = MeasureText("Controls", 70);
     DrawText(
         "Controls",
@@ -466,6 +519,7 @@ void drawControls()
         70,
         GRAY);
 
+    // Draw all the controls
     textWidth = MeasureText("Mouse Right    \n", 30);
     DrawText(
         "SPACE\n"
@@ -482,13 +536,14 @@ void drawControls()
         "A\n"
         "S\n"
         "D\n"
+        "F\n"
         "\n"
         "X\n"
         "C\n"
         "B\n"
         "ESCAPE\n",
         WINDOW_WIDTH / 2 - 200 - textWidth,
-        150,
+        145,
         30,
         GRAY);
 
@@ -507,13 +562,14 @@ void drawControls()
         "-    Switch to the color left of the selected color\n"
         "-    Switch to the color below the selected color\n"
         "-    Switch to the color right of the selected color\n"
+        "-    Add the selected color to the color filter\n"
         "\n"
         "-    Settings\n"
         "-    Controls\n"
         "-    Exit (exit the settings/controls tab)\n"
         "-    Quit (quit the game)\n",
         WINDOW_WIDTH / 2 - 200,
-        150,
+        145,
         30,
         GRAY);
 }
@@ -693,10 +749,21 @@ void drawGui()
     {
         for (int j = 0; j < 3; j++)
         {
+            int colorIndex = j + i * 3;
             if (GuiButton(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, ""))
-                selectedColor = j + i * 3;
-            DrawRectangle(800 + i * 55, 25 + j * 55, 40, 40, (GuiGetState() == STATE_DISABLED) ? LIGHTGRAY : colors[j + i * 3]);
-            DrawRectangleLinesEx(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, (j + i * 3 == selectedColor) ? 5 : 2, LIGHTGRAY);
+                selectedColor = colorIndex;
+
+            DrawRectangle(800 + i * 55, 25 + j * 55, 40, 40, (GuiGetState() == STATE_DISABLED) ? LIGHTGRAY : colors[colorIndex]);
+            DrawRectangleLinesEx(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, (colorIndex == selectedColor) ? 5 : 2, LIGHTGRAY);
+
+            for (int k = 0; k < colorFilter.len(); k++)
+            {
+                if (colorFilter.get(k) == colorIndex)
+                {
+                    DrawText("f", 800 + i * 55 + 10, 25 + j * 55 + 5, 20, (GuiGetState() == STATE_DISABLED) ? GRAY : BLACK);
+                    break;
+                }
+            }
         }
     }
 
