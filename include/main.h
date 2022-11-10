@@ -20,26 +20,6 @@
 #define MINE -1                  // Value of a mine
 #define OUT_OF_BOUNDS -1         // Value set if index is out of bounds or not relevant
 
-// Cell structure to store its information
-struct cell
-{
-    Vector2 coords;     // Coordinates of the cell
-    Vector2 drawCoords; // Coordinates at which the cell has to be drawn
-    int value;          // Number of neighbors that are mines
-    bool visible;       // State of the cell (revealed or not)
-    bool flagged;       // State of the cell (flagged or not)
-
-    // Set everything on initialization
-    cell()
-    {
-        coords = {0, 0};
-        drawCoords = {0, 0};
-        value = 0;
-        visible = false;
-        flagged = false;
-    }
-};
-
 // Node structure to store its data
 struct node
 {
@@ -163,10 +143,33 @@ public:
     }
 };
 
+// Cell structure to store its information
+struct cell
+{
+    Vector2 coords;     // Coordinates of the cell
+    Vector2 drawCoords; // Coordinates at which the cell has to be drawn
+    int value;          // Number of neighbors that are bombs
+    bool visible;       // State of the cell (revealed or not)
+    bool flagged;       // State of the cell (flagged or not)
+    DoublyLinkedList labels;
+
+    // Set everything on initialization
+    cell()
+    {
+        coords = {0, 0};
+        drawCoords = {0, 0};
+        value = 0;
+        visible = false;
+        flagged = false;
+    }
+};
+
 void update();                                    // Updates everything necesarry every frame
 void revealCells();                               // Reveals the cell that is clicked and calls revealNeighbors
 void revealNeighbors(int);                        // Reveals a clicked cell its neighbors
-void flagCell();                                  // Flags or unflags the cell that is clicked as a mine and decrements or increments the neighbors
+void flagCell();                                  // Flags or unflags the clicked cell
+void labelCell();                                 // Label the clicked cell with the selected color
+void unlabelCell();                               // Unlabel the clicked cell with the selected color
 void draw();                                      // Draws everything on the screen
 void drawBoard(int, int);                         // Draws all the cells
 bool cellOnScreen(int);                           // Checks if the cell is on the screen

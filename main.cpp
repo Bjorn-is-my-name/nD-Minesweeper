@@ -29,19 +29,19 @@ int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selec
 int newMines = 1;                             // the number of mines for next game
 
 // All gui object positions
-Rectangle guiDimensionLabel = {100, 30, 60, 50};
-Rectangle guiDimension = {100, 80, 50, 50};
-Rectangle guiDimensionSizesDimensionLabel = {200, 30, 100, 50};
-Rectangle guiDimensionSizesDimension = {200, 80, 100, 50};
-Rectangle guiDimensionSizesValuesLabel = {310, 30, 50, 50};
-Rectangle guiDimensionSizesValues = {310, 80, 50, 50};
-Rectangle guiMinesLabel = {410, 30, 50, 50};
-Rectangle guiMines = {410, 80, 50, 50};
-Rectangle guiStart = {510, 80, 50, 50};
-Rectangle guiMovingLabel = {760, 30, 60, 50};
-Rectangle guiMoving = {760, 80, 50, 50};
-Rectangle guiDrawingLabel = {860, 30, 60, 50};
-Rectangle guiDrawing = {860, 80, 50, 50};
+Rectangle guiDimensionLabel = {50, 30, 60, 50};
+Rectangle guiDimension = {50, 80, 50, 50};
+Rectangle guiDimensionSizesDimensionLabel = {150, 30, 100, 50};
+Rectangle guiDimensionSizesDimension = {150, 80, 100, 50};
+Rectangle guiDimensionSizesValuesLabel = {260, 30, 50, 50};
+Rectangle guiDimensionSizesValues = {260, 80, 50, 50};
+Rectangle guiMinesLabel = {360, 30, 50, 50};
+Rectangle guiMines = {360, 80, 50, 50};
+Rectangle guiStart = {460, 80, 50, 50};
+Rectangle guiMovingLabel = {600, 30, 60, 50};
+Rectangle guiMoving = {600, 80, 50, 50};
+Rectangle guiDrawingLabel = {700, 30, 60, 50};
+Rectangle guiDrawing = {700, 80, 50, 50};
 
 // All drawing colors
 Color colors[] = {
@@ -65,10 +65,10 @@ Color colors[] = {
     Color{136, 0, 136, 255},
     Color{255, 0, 136, 255},
     Color{136, 136, 136, 255},
-    Color{0, 0, 0, 255},
+    Color{255, 255, 255, 255},
     Color{136, 0, 68, 255},
     Color{68, 68, 68, 255},
-    Color{255, 255, 255, 255}};
+    Color{0, 0, 0, 255}};
 
 main(void)
 {
@@ -99,64 +99,94 @@ main(void)
 
 void update()
 {
-    // Only update if the mouse is outside of the gui
-    if (!playing && GetMousePosition().y > GUI_HEIGHT)
-        return;
-
-    // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
-    Vector2 mouseWheelMovement = GetMouseWheelMoveV();
-    if (mouseWheelMovement.y != 0)
+    if (playing)
     {
-        if (mouseWheelMovement.y > 0 && cellsize < MAX_CELLSIZE)
-            cellsize++;
-        else if (mouseWheelMovement.y < 0 && cellsize > MIN_CELLSIZE)
-            cellsize--;
+        // Turn moving mode on or off
+        if (IsKeyReleased(KEY_M))
+            movingMode = !movingMode;
 
-        calculateDrawCoords();
-    }
+        // Turn drawing mode on or off
+        if (IsKeyReleased(KEY_L))
+            drawingMode = !drawingMode;
 
-    // Turn moving mode on or off
-    if (playing && IsKeyReleased(KEY_M))
-        movingMode = !movingMode;
+        // Change selected color
+        if (IsKeyPressed(KEY_W))
+            selectedColor += (selectedColor % 3 == 0) ? 2 : -1;
 
-    // Turn drawing mode on or off
-    if (playing && IsKeyReleased(KEY_D))
-        drawingMode = !drawingMode;
+        if (IsKeyPressed(KEY_A))
+            selectedColor += (selectedColor < 3) ? 21 : -3;
 
-    if (!movingMode && !drawingMode)
-    {
-        // Reveal the clicked cell
-        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+        if (IsKeyPressed(KEY_S))
+            selectedColor += (selectedColor % 3 == 2) ? -2 : 1;
+
+        if (IsKeyPressed(KEY_D))
+            selectedColor += (selectedColor > 20) ? -21 : 3;
+
+        // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
+        Vector2 mouseWheelMovement = GetMouseWheelMoveV();
+        if (mouseWheelMovement.y != 0)
         {
-            if (!firstCellRevealed)
+            if (mouseWheelMovement.y > 0 && cellsize < MAX_CELLSIZE)
+                cellsize++;
+            else if (mouseWheelMovement.y < 0 && cellsize > MIN_CELLSIZE)
+                cellsize--;
+
+            calculateDrawCoords();
+        }
+
+        if (!movingMode && !drawingMode)
+        {
+            // Reveal the clicked cell
+            if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
-                int cellIndex = getCellIndexFromMouse();
-                if (cellIndex != OUT_OF_BOUNDS)
+                if (!firstCellRevealed)
                 {
-                    generateMines(cellIndex);
-                    firstCellRevealed = true;
+                    int cellIndex = getCellIndexFromMouse();
+                    if (cellIndex != OUT_OF_BOUNDS)
+                    {
+                        generateMines(cellIndex);
+                        firstCellRevealed = true;
+                    }
+                }
+
+                revealCells();
+            }
+
+            // Flag the clicked cell
+            if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+                flagCell();
+        }
+        else
+        {
+            if (movingMode)
+            {
+                // Make the board move when holding right click
+                if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+                {
+                    Vector2 mouseDelta = GetMouseDelta();
+                    xOffset += mouseDelta.x;
+                    yOffset += mouseDelta.y;
                 }
             }
 
-            revealCells();
+            if (drawingMode)
+            {
+                // Label or unlabel the cell
+                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
+                    labelCell();
+                else if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) && !movingMode)
+                    unlabelCell();
+            }
         }
-
-        // Flag the clicked cell
-        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
-            flagCell();
     }
     else
     {
-        if (movingMode)
-        {
-            // Make the board move when holding right click
-            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
-            {
-                Vector2 mouseDelta = GetMouseDelta();
-                xOffset += mouseDelta.x;
-                yOffset += mouseDelta.y;
-            }
-        }
+        // Change dimension for setting dimension size
+        if (IsKeyPressed(KEY_A))
+            newDimensionSizesDimension--;
+
+        if (IsKeyPressed(KEY_D))
+            newDimensionSizesDimension++;
     }
 }
 
@@ -171,6 +201,7 @@ void revealCells()
     // If the cell is flagged, remove the flag
     board[cellIndex].visible = true;
     board[cellIndex].flagged = false;
+    board[cellIndex].labels.empty();
 
     // If the cell is a mine, the player loses
     if (board[cellIndex].value == MINE)
@@ -191,6 +222,7 @@ void revealNeighbors(int cellIndex)
         {
             board[neighbors[i]].visible = true;
             board[neighbors[i]].flagged = false;
+            board[cellIndex].labels.empty();
 
             if (board[neighbors[i]].value == 0)
                 revealNeighbors(neighbors[i]);
@@ -226,6 +258,44 @@ void flagCell()
             if (++flaggedMines == mines)
                 win();
     }
+}
+
+void labelCell()
+{
+    int cellIndex = getCellIndexFromMouse();
+    int labels = board[cellIndex].labels.len();
+
+    // Return if no cell is clicked or already has the selected color label
+    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible || labels == 24)
+        return;
+
+    for (int i = 0; i < labels; i++)
+        if (board[cellIndex].labels.get(i) == selectedColor)
+            return;
+
+    board[cellIndex].labels.add(selectedColor);
+}
+
+void unlabelCell()
+{
+    int cellIndex = getCellIndexFromMouse();
+    int labels = board[cellIndex].labels.len();
+
+    // Return if no cell is clicked or it doesn't have the color label
+    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible || labels == 0)
+        return;
+
+    int labelIndex = OUT_OF_BOUNDS;
+
+    // If the cell has the selected color its label, don't subtract 1 to prevent it from interfering with NULL check
+    for (int i = 0; i < labels; i++)
+        if (board[cellIndex].labels.get(i) == selectedColor)
+            labelIndex = i;
+
+    if (labelIndex == OUT_OF_BOUNDS)
+        return;
+
+    board[cellIndex].labels.remove(labelIndex);
 }
 
 void draw()
@@ -386,8 +456,10 @@ void drawGui()
 {
     // Draw the background and borders
     DrawRectangle(0, 0, WINDOW_WIDTH, GUI_HEIGHT, BLACK);
-    DrawRectangleLinesEx(Rectangle{0, 0, 660, GUI_HEIGHT}, 10, GRAY);
-    DrawRectangleLinesEx(Rectangle{660, 0, WINDOW_WIDTH - 660, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(Rectangle{0, 0, 560, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(Rectangle{550, 0, 700, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(Rectangle{1240, 0, 475, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(Rectangle{1705, 0, 215, GUI_HEIGHT}, 10, GRAY);
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
         mousePosition = GetMousePosition();
@@ -481,12 +553,12 @@ void drawGui()
         GuiDisable();
 
     // Moving mode
-    GuiLabel(guiMovingLabel, "Move [M]");
+    GuiLabel(guiMovingLabel, "Move");
     if (GuiButton(guiMoving, movingMode ? "On" : "Off"))
         movingMode = !movingMode;
 
     // Drawing mode
-    GuiLabel(guiDrawingLabel, "Draw [D]");
+    GuiLabel(guiDrawingLabel, "Draw");
     if (GuiButton(guiDrawing, drawingMode ? "On" : "Off"))
         drawingMode = !drawingMode;
 
@@ -495,14 +567,37 @@ void drawGui()
     {
         for (int j = 0; j < 3; j++)
         {
-            if (GuiButton(Rectangle{(float)(960 + i * 55), (float)(25 + j * 55), 40, 40}, ""))
+            if (GuiButton(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, ""))
                 selectedColor = j + i * 3;
-            DrawRectangle(960 + i * 55, 25 + j * 55, 40, 40, (GuiGetState() == STATE_DISABLED) ? LIGHTGRAY : colors[j + i * 3]);
-            DrawRectangleLinesEx(Rectangle{(float)(960 + i * 55), (float)(25 + j * 55), 40, 40}, (j + i * 3 == selectedColor) ? 5 : 2, LIGHTGRAY);
+            DrawRectangle(800 + i * 55, 25 + j * 55, 40, 40, (GuiGetState() == STATE_DISABLED) ? LIGHTGRAY : colors[j + i * 3]);
+            DrawRectangleLinesEx(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, (j + i * 3 == selectedColor) ? 5 : 2, LIGHTGRAY);
+        }
+    }
+
+    if (playing)
+    {
+        int cellIndex = getCellIndexFromMouse();
+
+        if (cellIndex != OUT_OF_BOUNDS)
+        {
+            int size = board[cellIndex].labels.len();
+            int i = 0;
+            for (int j = 0; j < size; j++)
+            {
+                DrawRectangle(1265 + j % 8 * 55, 25 + i * 55, 40, 40, colors[board[cellIndex].labels.get(j)]);
+                DrawRectangleLinesEx(Rectangle{(float)(1265 + j % 8 * 55), (float)(25 + i * 55), 40, 40}, 2, LIGHTGRAY);
+
+                if ((j + 1) % 8 == 0)
+                    i++;
+            }
         }
     }
 
     GuiEnable();
+
+    // settings
+    // controls
+    // quit
 }
 
 int getCellIndexFromMouse()
