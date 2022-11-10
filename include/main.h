@@ -164,6 +164,7 @@ struct cell
     }
 };
 
+void quit();                                      // Closes and deallocates everything before exiting the game
 void update();                                    // Updates everything necesarry every frame
 void revealCells();                               // Reveals the cell that is clicked and calls revealNeighbors
 void revealNeighbors(int);                        // Reveals a clicked cell its neighbors

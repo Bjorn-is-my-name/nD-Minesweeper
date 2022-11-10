@@ -19,7 +19,7 @@ bool playing = false;                                                           
 bool movingMode = false;                                                                                 // Allow the user to move the board with right mouse
 bool drawingMode = false;                                                                                // Allow the user to color label cells with left mouse
 bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
-int selectedColor = 0;                                                                                   // The selected color in drawing mode
+int selectedColor;                                                                                       // The selected color in drawing mode
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)
@@ -27,6 +27,9 @@ int newDimensionOld = 1;                      // The dimension for next game bef
 int newDimensionSizesDimension = 1;           // The dimension of which the size is changeable (changeable in the gui)
 int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
 int newMines = 1;                             // the number of mines for next game
+
+bool inSettings = false;
+bool inControls = false;
 
 // All gui object positions
 Rectangle guiDimensionLabel = {50, 30, 60, 50};
@@ -42,6 +45,9 @@ Rectangle guiMovingLabel = {600, 30, 60, 50};
 Rectangle guiMoving = {600, 80, 50, 50};
 Rectangle guiDrawingLabel = {700, 30, 60, 50};
 Rectangle guiDrawing = {700, 80, 50, 50};
+Rectangle guiSettings = {1730, 65, 165, 50};
+Rectangle guiControls = {1730, 125, 165, 50};
+Rectangle guiQuit = {WINDOW_WIDTH - 50, 25, 25, 25};
 
 // All drawing colors
 Color colors[] = {
@@ -87,18 +93,33 @@ main(void)
         draw();
     }
 
-    // If the game is exited, close everything down
+    quit();
+
+    return 0;
+}
+
+void quit()
+{
+    // Close everything down
     CloseWindow();
 
     // Deallocate all the memory
     delete[] board;
     board = nullptr;
-
-    return 0;
 }
 
 void update()
 {
+    if (inSettings)
+    {
+        return;
+    }
+
+    if (inControls)
+    {
+        return;
+    }
+
     if (playing)
     {
         // Turn moving mode on or off
@@ -188,6 +209,23 @@ void update()
         if (IsKeyPressed(KEY_D))
             newDimensionSizesDimension++;
     }
+
+    // Start or stop game
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        if (playing)
+            gameover();
+        else
+            setupGame();
+    }
+
+    // Open settings
+    if (IsKeyPressed(KEY_X))
+        inSettings = true;
+
+    // Open controls
+    if (IsKeyPressed(KEY_C))
+        inControls = true;
 }
 
 void revealCells()
@@ -541,7 +579,7 @@ void drawGui()
     GuiEnable();
 
     // Start button
-    if (GuiButton(guiStart, playing ? "Stop" : "Start"))
+    if (GuiButton(guiStart, playing ? "Stop" : "Play"))
     {
         if (playing)
             gameover();
@@ -595,9 +633,40 @@ void drawGui()
 
     GuiEnable();
 
-    // settings
-    // controls
-    // quit
+    // Settings button
+    if (GuiButton(guiSettings, "Settings"))
+        inSettings = true;
+
+    /*
+    SPACE - Play/Stop
+    A - Previous dimension size
+    D - Next dimension size
+
+    M - Toggle Moving mode
+    Mouse Right - Hold and drag to move the board (overrides drawing mode)
+
+    L - Toggle Drawing mode
+    Mouse Left - Label the cell with the selected color
+    Mouse Right - Remove the label with the selected color from the cell
+    W - Switch to the color above the selected color
+    A - Switch to the color left of the selected color
+    S - Switch to the color below the selected color
+    D - Switch to the color right of the selected color
+
+    X - Settings
+    C - Controls
+    ESCAPE - Quit
+    */
+
+    // Controls button
+    if (GuiButton(guiControls, "Controls"))
+        inControls = true;
+
+    // Quit button
+    if (GuiButton(guiQuit, ""))
+        quit();
+    DrawLine(WINDOW_WIDTH - 45, 30, WINDOW_WIDTH - 30, 45, LIGHTGRAY);
+    DrawLine(WINDOW_WIDTH - 30, 30, WINDOW_WIDTH - 45, 45, LIGHTGRAY);
 }
 
 int getCellIndexFromMouse()
@@ -680,6 +749,7 @@ void setupGame()
     yOffset = 50 + GUI_HEIGHT;
     movingMode = false;
     drawingMode = false;
+    selectedColor = 0;
 
     setupBoard();
     calculateDrawCoords();
@@ -877,6 +947,7 @@ void generateMines(int cellIndex)
 void win()
 {
     playing = false;
+    movingMode = false;
     drawingMode = false;
     firstCellRevealed = false;
 }
@@ -884,6 +955,7 @@ void win()
 void gameover()
 {
     playing = false;
+    movingMode = false;
     drawingMode = false;
     firstCellRevealed = false;
 }
