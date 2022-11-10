@@ -16,8 +16,10 @@ int cellsize;                                                                   
 int xOffset;                                                                                             // X offset for moving the board around
 int yOffset;                                                                                             // Y offset for moving the board around
 bool playing = false;                                                                                    // To keep track of the game state
-bool drawingMode = false;                                                                                // Switch between playing/flagging and moving/drawing
+bool movingMode = false;                                                                                 // Allow the user to move the board with right mouse
+bool drawingMode = false;                                                                                // Allow the user to color label cells with left mouse
 bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
+int selectedColor = 0;                                                                                   // The selected color in drawing mode
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)
@@ -26,12 +28,57 @@ int newDimensionSizesDimension = 1;           // The dimension of which the size
 int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
 int newMines = 1;                             // the number of mines for next game
 
-int main(void)
+// All gui object positions
+Rectangle guiDimensionLabel = {100, 30, 60, 50};
+Rectangle guiDimension = {100, 80, 50, 50};
+Rectangle guiDimensionSizesDimensionLabel = {200, 30, 100, 50};
+Rectangle guiDimensionSizesDimension = {200, 80, 100, 50};
+Rectangle guiDimensionSizesValuesLabel = {310, 30, 50, 50};
+Rectangle guiDimensionSizesValues = {310, 80, 50, 50};
+Rectangle guiMinesLabel = {410, 30, 50, 50};
+Rectangle guiMines = {410, 80, 50, 50};
+Rectangle guiStart = {510, 80, 50, 50};
+Rectangle guiMovingLabel = {760, 30, 60, 50};
+Rectangle guiMoving = {760, 80, 50, 50};
+Rectangle guiDrawingLabel = {860, 30, 60, 50};
+Rectangle guiDrawing = {860, 80, 50, 50};
+
+// All drawing colors
+Color colors[] = {
+    Color{255, 0, 0, 255},
+    Color{255, 136, 0, 255},
+    Color{255, 255, 0, 255},
+    Color{136, 0, 0, 255},
+    Color{136, 68, 0, 255},
+    Color{136, 136, 0, 255},
+    Color{0, 255, 0, 255},
+    Color{0, 255, 255, 255},
+    Color{0, 0, 255, 255},
+    Color{0, 136, 0, 255},
+    Color{0, 136, 136, 255},
+    Color{0, 0, 136, 255},
+    Color{136, 0, 255, 255},
+    Color{187, 0, 255, 255},
+    Color{255, 0, 255, 255},
+    Color{68, 0, 136, 255},
+    Color{102, 0, 136, 255},
+    Color{136, 0, 136, 255},
+    Color{255, 0, 136, 255},
+    Color{136, 136, 136, 255},
+    Color{0, 0, 0, 255},
+    Color{136, 0, 68, 255},
+    Color{68, 68, 68, 255},
+    Color{255, 255, 255, 255}};
+
+main(void)
 {
     // Set up the window
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Minesweeper nD");
     ToggleFullscreen();
     SetTargetFPS(FPS);
+
+    // load a custom gui style
+    GuiLoadStyle("C:/Users/bjorn/Documents/CPlusPlusFiles/nD-Minesweeper/guiStyle.rgs");
 
     // Game loop
     while (!WindowShouldClose())
@@ -68,26 +115,16 @@ void update()
         calculateDrawCoords();
     }
 
+    // Turn moving mode on or off
+    if (playing && IsKeyReleased(KEY_M))
+        movingMode = !movingMode;
+
     // Turn drawing mode on or off
     if (playing && IsKeyReleased(KEY_D))
         drawingMode = !drawingMode;
 
-    if (drawingMode)
+    if (!movingMode && !drawingMode)
     {
-        // Make the board move when holding right click
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
-        {
-            Vector2 mouseDelta = GetMouseDelta();
-            xOffset += mouseDelta.x;
-            yOffset += mouseDelta.y;
-        }
-    }
-    else
-    {
-        // Flag the clicked cell
-        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
-            flagCell();
-
         // Reveal the clicked cell
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
         {
@@ -102,6 +139,23 @@ void update()
             }
 
             revealCells();
+        }
+
+        // Flag the clicked cell
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
+            flagCell();
+    }
+    else
+    {
+        if (movingMode)
+        {
+            // Make the board move when holding right click
+            if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+            {
+                Vector2 mouseDelta = GetMouseDelta();
+                xOffset += mouseDelta.x;
+                yOffset += mouseDelta.y;
+            }
         }
     }
 }
@@ -136,6 +190,7 @@ void revealNeighbors(int cellIndex)
         if (neighbors[i] != OUT_OF_BOUNDS && !board[neighbors[i]].visible)
         {
             board[neighbors[i]].visible = true;
+            board[neighbors[i]].flagged = false;
 
             if (board[neighbors[i]].value == 0)
                 revealNeighbors(neighbors[i]);
@@ -202,10 +257,6 @@ void draw()
 
     // Draw the gui for user input
     drawGui();
-
-    // Show if drawingMode is on or off
-    std::string text = drawingMode ? "Drawing (D): On" : "Drawing (D): Off";
-    DrawText(text.c_str(), 1500, 100, 20, WHITE);
 
     EndDrawing();
 }
@@ -333,22 +384,16 @@ void calculateDrawCoords()
 
 void drawGui()
 {
-    // Draw the border around the gui
-    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, GUI_HEIGHT}, 10, GRAY);
-
-    // All gui object positions
-    Rectangle guiDimensionLabel = {200, 30, 50, 50};
-    Rectangle guiDimension = {200, 80, 50, 50};
-    Rectangle guiDimensionSizesDimensionLabel = {400, 30, 100, 50};
-    Rectangle guiDimensionSizesDimension = {400, 80, 100, 50};
-    Rectangle guiDimensionSizesValuesLabel = {550, 30, 50, 50};
-    Rectangle guiDimensionSizesValues = {550, 80, 50, 50};
-    Rectangle guiMinesLabel = {700, 30, 50, 50};
-    Rectangle guiMines = {700, 80, 50, 50};
-    Rectangle guiStart = {800, 50, 50, 50};
+    // Draw the background and borders
+    DrawRectangle(0, 0, WINDOW_WIDTH, GUI_HEIGHT, BLACK);
+    DrawRectangleLinesEx(Rectangle{0, 0, 660, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(Rectangle{660, 0, WINDOW_WIDTH - 660, GUI_HEIGHT}, 10, GRAY);
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
         mousePosition = GetMousePosition();
+
+    if (playing)
+        GuiDisable();
 
     // Draw all the gui objects and make set the editMode true if the object is clicked
 
@@ -360,7 +405,7 @@ void drawGui()
             &newDimension,
             1,
             INT_MAX,
-            !playing && CheckCollisionPointRec(mousePosition, guiDimension)))
+            CheckCollisionPointRec(mousePosition, guiDimension)))
     {
         // If the dimension is changed, update dimensionSizes but keep already set values intact
         if (newDimension > 0)
@@ -399,7 +444,7 @@ void drawGui()
         &newDimensionSizesDimension,
         1,
         (newDimension > 0) ? newDimension : 1,
-        !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesDimension));
+        CheckCollisionPointRec(mousePosition, guiDimensionSizesDimension));
 
     // DimensionSizes size
     GuiLabel(guiDimensionSizesValuesLabel, "Size");
@@ -409,7 +454,7 @@ void drawGui()
         &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : ((newDimensionSizesDimension <= 0 || newDimension == 0) ? 0 : newDimension - 1)],
         1,
         INT_MAX,
-        !playing && CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
+        CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
 
     // Mines
     GuiLabel(guiMinesLabel, "Mines");
@@ -419,7 +464,9 @@ void drawGui()
         &newMines,
         1,
         getNewTotalSize(newDimension),
-        !playing && CheckCollisionPointRec(mousePosition, guiMines));
+        CheckCollisionPointRec(mousePosition, guiMines));
+
+    GuiEnable();
 
     // Start button
     if (GuiButton(guiStart, playing ? "Stop" : "Start"))
@@ -429,6 +476,33 @@ void drawGui()
         else
             setupGame();
     }
+
+    if (!playing)
+        GuiDisable();
+
+    // Moving mode
+    GuiLabel(guiMovingLabel, "Move [M]");
+    if (GuiButton(guiMoving, movingMode ? "On" : "Off"))
+        movingMode = !movingMode;
+
+    // Drawing mode
+    GuiLabel(guiDrawingLabel, "Draw [D]");
+    if (GuiButton(guiDrawing, drawingMode ? "On" : "Off"))
+        drawingMode = !drawingMode;
+
+    // Color options
+    for (int i = 0; i < 8; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (GuiButton(Rectangle{(float)(960 + i * 55), (float)(25 + j * 55), 40, 40}, ""))
+                selectedColor = j + i * 3;
+            DrawRectangle(960 + i * 55, 25 + j * 55, 40, 40, (GuiGetState() == STATE_DISABLED) ? LIGHTGRAY : colors[j + i * 3]);
+            DrawRectangleLinesEx(Rectangle{(float)(960 + i * 55), (float)(25 + j * 55), 40, 40}, (j + i * 3 == selectedColor) ? 5 : 2, LIGHTGRAY);
+        }
+    }
+
+    GuiEnable();
 }
 
 int getCellIndexFromMouse()
@@ -509,6 +583,7 @@ void setupGame()
     cellsize = DEFAULT_CELLSIZE;
     xOffset = 50;
     yOffset = 50 + GUI_HEIGHT;
+    movingMode = false;
     drawingMode = false;
 
     setupBoard();
