@@ -47,7 +47,8 @@ Rectangle guiDrawingLabel = {700, 30, 60, 50};
 Rectangle guiDrawing = {700, 80, 50, 50};
 Rectangle guiSettings = {1730, 65, 165, 50};
 Rectangle guiControls = {1730, 125, 165, 50};
-Rectangle guiQuit = {WINDOW_WIDTH - 50, 25, 25, 25};
+Rectangle guiQuit = {1870, 25, 25, 25};
+Rectangle guiBack = {1785, 35, 100, 50};
 
 // All drawing colors
 Color colors[] = {
@@ -112,11 +113,15 @@ void update()
 {
     if (inSettings)
     {
+        if (IsKeyReleased(KEY_B))
+            inSettings = false;
         return;
     }
 
     if (inControls)
     {
+        if (IsKeyReleased(KEY_B))
+            inControls = false;
         return;
     }
 
@@ -342,6 +347,20 @@ void draw()
 
     ClearBackground(BLACK);
 
+    if (inSettings)
+    {
+        drawSettings();
+        EndDrawing();
+        return;
+    }
+
+    if (inControls)
+    {
+        drawControls();
+        EndDrawing();
+        return;
+    }
+
     // Draw all the cells and highlight if hovered over
     if (dimension != NULL)
     {
@@ -428,6 +447,75 @@ void drawBoard(int cellIndex, int fontsize)
             TEXT_CHAR_SPACING,
             BLACK);
     }
+}
+
+void drawSettings()
+{
+    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
+}
+
+void drawControls()
+{
+    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
+
+    int textWidth = MeasureText("Controls", 70);
+    DrawText(
+        "Controls",
+        WINDOW_WIDTH / 2 - textWidth / 2,
+        50,
+        70,
+        GRAY);
+
+    textWidth = MeasureText("Mouse Right    \n", 30);
+    DrawText(
+        "SPACE\n"
+        "A\n"
+        "D\n"
+        "\n"
+        "M\n"
+        "Mouse Right\n"
+        "\n"
+        "L\n"
+        "Mouse Left\n"
+        "Mouse Right\n"
+        "W\n"
+        "A\n"
+        "S\n"
+        "D\n"
+        "\n"
+        "X\n"
+        "C\n"
+        "B\n"
+        "ESCAPE\n",
+        WINDOW_WIDTH / 2 - 200 - textWidth,
+        150,
+        30,
+        GRAY);
+
+    DrawText(
+        "-    Play/Stop\n"
+        "-    Previous dimension size\n"
+        "-    Next dimension size\n"
+        "\n"
+        "-    Toggle Moving mode\n"
+        "-    Hold and drag to move the board (overrides drawing mode)\n"
+        "\n"
+        "-    Toggle Drawing mode\n"
+        "-    Label the cell with the selected color\n"
+        "-    Remove the label with the selected color from the cell\n"
+        "-    Switch to the color above the selected color\n"
+        "-    Switch to the color left of the selected color\n"
+        "-    Switch to the color below the selected color\n"
+        "-    Switch to the color right of the selected color\n"
+        "\n"
+        "-    Settings\n"
+        "-    Controls\n"
+        "-    Exit (exit the settings/controls tab)\n"
+        "-    Quit (quit the game)\n",
+        WINDOW_WIDTH / 2 - 200,
+        150,
+        30,
+        GRAY);
 }
 
 bool cellOnScreen(int cellIndex)
@@ -636,27 +724,6 @@ void drawGui()
     // Settings button
     if (GuiButton(guiSettings, "Settings"))
         inSettings = true;
-
-    /*
-    SPACE - Play/Stop
-    A - Previous dimension size
-    D - Next dimension size
-
-    M - Toggle Moving mode
-    Mouse Right - Hold and drag to move the board (overrides drawing mode)
-
-    L - Toggle Drawing mode
-    Mouse Left - Label the cell with the selected color
-    Mouse Right - Remove the label with the selected color from the cell
-    W - Switch to the color above the selected color
-    A - Switch to the color left of the selected color
-    S - Switch to the color below the selected color
-    D - Switch to the color right of the selected color
-
-    X - Settings
-    C - Controls
-    ESCAPE - Quit
-    */
 
     // Controls button
     if (GuiButton(guiControls, "Controls"))

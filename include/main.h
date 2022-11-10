@@ -173,6 +173,8 @@ void labelCell();                                 // Label the clicked cell with
 void unlabelCell();                               // Unlabel the clicked cell with the selected color
 void draw();                                      // Draws everything on the screen
 void drawBoard(int, int);                         // Draws all the cells
+void drawSettings();                              // Draw the settings tab
+void drawControls();                              // Draw the controls tab
 bool cellOnScreen(int);                           // Checks if the cell is on the screen
 void calculateDrawCoords();                       // Calculates all the coordinates the cells have to be draw at and calls drawBoard
 void drawGui();                                   // Draws the gui
