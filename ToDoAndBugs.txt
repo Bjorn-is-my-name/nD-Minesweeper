@@ -18,6 +18,9 @@ Add needed comments, dont add them when the action is obvious
 
 
 STILL HAVE TO FINISH:
+Allow user in some way to write down the number of boms the color label accounts for (VERY MUCH NEEDED)
+(MIGHT HAVE SOLUTION ALREADY... Allow for multiple clicks with same color label and just add a number indicating how many labels of the color the cell has)
+
 Finish win and gamerover functions with a little screen
 Add timer to keep track of time to beat game
 Make all bombs visible after gameover
