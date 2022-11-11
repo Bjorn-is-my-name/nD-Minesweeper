@@ -2424,7 +2424,7 @@ bool GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, i
             // if (*value > maxValue) *value = maxValue;
             // else if (*value < minValue) *value = minValue;
 
-            // NOTE: I uncommented this to prevent bugs
+            // NOTE: I uncommented this from above to prevent bugs (if this is not done and the user inputs a number of which the text is wider then the input field, the game crashes... this only happens on guiDimension)
             if (*value > maxValue)
                 *value = maxValue;
 
