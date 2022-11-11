@@ -28,7 +28,8 @@ int newDimension = 1;                         // The dimension for next game (ch
 int newDimensionOld = 1;                      // The dimension for next game before changed by user (used to copy dimension sizes as the dimension changes)
 int newDimensionSizesDimension = 1;           // The dimension of which the size is changeable (changeable in the gui)
 int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
-int newMines = 1;                             // the number of mines for next game
+char newMinesInput[10] = "1";                 // The text input from user for the number of mines
+int newMines = 1;                             // The number of mines for next game
 
 bool inSettings = false;
 bool inControls = false;
@@ -674,10 +675,10 @@ void drawGui()
     GuiLabel(guiDimensionLabel, "Dimension");
     if (GuiValueBox(
             guiDimension,
-            "",
+            NULL,
             &newDimension,
             1,
-            INT_MAX,
+            7,
             CheckCollisionPointRec(mousePosition, guiDimension)))
     {
         // If the dimension is changed, update dimensionSizes but keep already set values intact
@@ -723,21 +724,55 @@ void drawGui()
     GuiLabel(guiDimensionSizesValuesLabel, "Size");
     GuiValueBox(
         guiDimensionSizesValues,
-        "",
+        NULL,
         &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : ((newDimensionSizesDimension <= 0 || newDimension == 0) ? 0 : newDimension - 1)],
         1,
-        INT_MAX,
+        20,
         CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
 
     // Mines
     GuiLabel(guiMinesLabel, "Mines");
-    GuiValueBox(
-        guiMines,
-        "",
-        &newMines,
-        1,
-        getNewTotalSize(newDimension),
-        CheckCollisionPointRec(mousePosition, guiMines));
+    if (GuiTextBox(
+            guiMines,
+            newMinesInput,
+            10,
+            CheckCollisionPointRec(mousePosition, guiMines)))
+    {
+        // Convert from text to number
+        int value = std::atoi(newMinesInput);
+        int max = getNewTotalSize(newDimension);
+
+        // If the number is too high reduce it to the max
+        if (value > max)
+            value = max;
+
+        // Set the number of mines
+        newMines = value;
+
+        // Clear the text
+        for (int i = 0; i < 10; i++)
+            newMinesInput[i] = 0;
+
+        // Reset the text
+        if (value == 0)
+            newMinesInput[0] = '0';
+        else
+        {
+            int tmp = value;
+            int i = 0;
+            while (tmp > 0)
+            {
+                i++;
+                tmp /= 10;
+            }
+
+            while (value > 0)
+            {
+                newMinesInput[--i] = value % 10 + '0';
+                value /= 10;
+            }
+        }
+    }
 
     GuiEnable();
 
@@ -877,7 +912,6 @@ void highlightNeighbors()
 void setupGame()
 {
     // Set everything up for a new game
-    playing = true;
     dimension = newDimension;
 
     delete[] dimensionSizes;
@@ -902,6 +936,8 @@ void setupGame()
 
     setupBoard();
     calculateDrawCoords();
+
+    playing = true;
 }
 
 void setupBoard()
