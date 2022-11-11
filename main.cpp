@@ -494,7 +494,7 @@ void drawSettings()
         WINDOW_WIDTH / 2 - textWidth / 2,
         50,
         70,
-        GRAY);
+        LIGHTGRAY);
 
     GuiSetStyle(DEFAULT, TEXT_SIZE, 30);
 
@@ -504,7 +504,7 @@ void drawSettings()
         WINDOW_WIDTH / 2 - textWidth,
         400,
         30,
-        GRAY);
+        LIGHTGRAY);
 
     if (GuiButton(guiFilterBoard, filterBoard ? "On" : "Off"))
         filterBoard = !filterBoard;
@@ -515,7 +515,7 @@ void drawSettings()
         WINDOW_WIDTH / 2 - textWidth,
         500,
         30,
-        GRAY);
+        LIGHTGRAY);
 
     filterOpacity = GuiSlider(
         guiFilterOpacity,
@@ -524,6 +524,11 @@ void drawSettings()
         filterOpacity,
         0,
         255);
+
+    if (GuiButton(guiQuit, ""))
+        inSettings = false;
+    DrawLine(WINDOW_WIDTH - 45, 30, WINDOW_WIDTH - 30, 45, LIGHTGRAY);
+    DrawLine(WINDOW_WIDTH - 30, 30, WINDOW_WIDTH - 45, 45, LIGHTGRAY);
 }
 
 void drawControls()
@@ -538,7 +543,7 @@ void drawControls()
         WINDOW_WIDTH / 2 - textWidth / 2,
         50,
         70,
-        GRAY);
+        LIGHTGRAY);
 
     // Draw all the controls
     textWidth = MeasureText("Mouse Right    \n", 30);
@@ -566,7 +571,7 @@ void drawControls()
         WINDOW_WIDTH / 2 - 200 - textWidth,
         145,
         30,
-        GRAY);
+        LIGHTGRAY);
 
     DrawText(
         "-    Play/Stop\n"
@@ -592,7 +597,12 @@ void drawControls()
         WINDOW_WIDTH / 2 - 200,
         145,
         30,
-        GRAY);
+        LIGHTGRAY);
+
+    if (GuiButton(guiQuit, ""))
+        inControls = false;
+    DrawLine(WINDOW_WIDTH - 45, 30, WINDOW_WIDTH - 30, 45, LIGHTGRAY);
+    DrawLine(WINDOW_WIDTH - 30, 30, WINDOW_WIDTH - 45, 45, LIGHTGRAY);
 }
 
 unsigned char setOpacity(int cellIndex)
