@@ -4,24 +4,24 @@
 #include <raygui.h>           // For all the gui options
 #include <main.h>             // For all the defines, typedefines, structs, classes and function presets
 #include <string>             // For converting to const char * (c_str())
-#include <iostream>
+
 // Game variables
-int dimension;                                                                                           // Dimension in which the game is played
-int *dimensionSizes; /*minimum should be 1 but is 3 on dim 1 and 2 cuz still a bug in getTrueNeighbors*/ // Sizes of each dimension (width, length, depth etc...)
-int cells;                                                                                               // Total number of cells
-cell *board;                                                                                             // Board which stores all the cells
-int mines;                                                                                               // Number of mines
-int flaggedMines;                                                                                        // The number of mines flagged
-int cellsize;                                                                                            // Changeable cellsize by scrolling
-int xOffset;                                                                                             // X offset for moving the board around
-int yOffset;                                                                                             // Y offset for moving the board around
-bool playing = false;                                                                                    // To keep track of the game state
-bool movingMode = false;                                                                                 // Allow the user to move the board with right mouse
-bool drawingMode = false;                                                                                // Allow the user to color label cells with left mouse
-bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
-int selectedColor;                                                                                       // The selected color in drawing mode
-bool filterBoard = true;                                                                                 // Filter out the board or the labeled cells
-unsigned char filterOpacity = DEFAULT_FILTER_OPACITY;                                                    // Opacity for the filtered out cells
+int dimension;                                        // Dimension in which the game is played
+int *dimensionSizes;                                  // Sizes of each dimension (width, length, depth etc...)
+int cells;                                            // Total number of cells
+cell *board;                                          // Board which stores all the cells
+int mines;                                            // Number of mines
+int flaggedMines;                                     // The number of mines flagged
+int cellsize;                                         // Changeable cellsize by scrolling
+int xOffset;                                          // X offset for moving the board around
+int yOffset;                                          // Y offset for moving the board around
+bool playing = false;                                 // To keep track of the game state
+bool movingMode = false;                              // Allow the user to move the board with right mouse
+bool drawingMode = false;                             // Allow the user to color label cells with left mouse
+bool firstCellRevealed = false;                       // Check when the first cell is clicked, generate mines after to always start with a 0
+int selectedColor;                                    // The selected color in drawing mode
+bool filterBoard = true;                              // Filter out the board or the labeled cells
+unsigned char filterOpacity = DEFAULT_FILTER_OPACITY; // Opacity for the filtered out cells
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)

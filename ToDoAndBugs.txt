@@ -1,0 +1,36 @@
+============================================================    NOTE TO SELF    ===========================================================================
+
+STUPID ASS BUGS LISTED BELOW:
+Bug in getTrueNeighbors miscalculates neighbors if dimension 1 and/or 2 has a size less then 3
+
+A lot of bugs with big numbers, need to make custom bigger number holder (so larger then 64 bits).
+Number holder must be dynamic so it can be 128 bits but also other sizes (start at 32 bits, increase by 32 every time running out of space)
+
+
+
+NON BUGS THAT STILL BUG ME:
+Try to center numbers in gui (the're slight offcenter to the left)
+
+Try to clean op the code a bit more
+Not an insane amount of defines but also not have all magic numbers
+Add needed comments, dont add them when the action is obvious
+
+
+
+STILL HAVE TO FINISH:
+Finish win and gamerover functions with a little screen
+Add timer to keep track of time to beat game
+Make all bombs visible after gameover
+Add more settings
+
+
+
+MAYBE IMPLEMENT AFTER MORE IMPORTANT SHIT IS FIXED (NOT MAYBE... LIKE ACTUALY DO THEM):
+Allow user to look at board after gameover
+Decrease value of cells when a neighbor is flagged
+In settings, create tab for changing keybinds
+
+
+
+VERY MAYBE SHIT:
+If i magically find a hundred bucks laying around and the game looks well, upload it to steam
