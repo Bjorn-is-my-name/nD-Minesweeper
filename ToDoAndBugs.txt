@@ -29,6 +29,7 @@ MAYBE IMPLEMENT AFTER MORE IMPORTANT SHIT IS FIXED (NOT MAYBE... LIKE ACTUALY DO
 Allow user to look at board after gameover
 Decrease value of cells when a neighbor is flagged
 In settings, create tab for changing keybinds
+Save user data, like settings, keybinds and best time
 
 
 
