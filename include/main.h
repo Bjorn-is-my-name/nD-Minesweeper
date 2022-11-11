@@ -176,6 +176,7 @@ void draw();                                      // Draws everything on the scr
 void drawBoard(int, int);                         // Draws all the cells
 void drawSettings();                              // Draw the settings tab
 void drawControls();                              // Draw the controls tab
+unsigned char setOpacity(int);                    // Set the opacity based on the settings
 bool cellOnScreen(int);                           // Checks if the cell is on the screen
 void calculateDrawCoords();                       // Calculates all the coordinates the cells have to be draw at and calls drawBoard
 void drawGui();                                   // Draws the gui

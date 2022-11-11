@@ -20,6 +20,8 @@ bool movingMode = false;                                                        
 bool drawingMode = false;                                                                                // Allow the user to color label cells with left mouse
 bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
 int selectedColor;                                                                                       // The selected color in drawing mode
+bool filterBoard = true;                                                                                 // Filter out the board or the labeled cells
+unsigned char filterOpacity = 75;                                                                        // Opacity for the filtered out cells
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)
@@ -32,7 +34,7 @@ bool inSettings = false;
 bool inControls = false;
 
 // All gui object positions
-Rectangle guiDimensionLabel = {50, 30, 60, 50};
+Rectangle guiDimensionLabel = {50, 30, 70, 50};
 Rectangle guiDimension = {50, 80, 50, 50};
 Rectangle guiDimensionSizesDimensionLabel = {150, 30, 100, 50};
 Rectangle guiDimensionSizesDimension = {150, 80, 100, 50};
@@ -47,8 +49,10 @@ Rectangle guiDrawingLabel = {700, 30, 60, 50};
 Rectangle guiDrawing = {700, 80, 50, 50};
 Rectangle guiSettings = {1730, 65, 165, 50};
 Rectangle guiControls = {1730, 125, 165, 50};
-Rectangle guiQuit = {1870, 25, 25, 25};
 Rectangle guiBack = {1785, 35, 100, 50};
+Rectangle guiQuit = {1870, 25, 25, 25};
+Rectangle guiFilterBoard = {WINDOW_WIDTH / 2 + 50, 390, 200, 50};
+Rectangle guiFilterOpacity = {WINDOW_WIDTH / 2 + 50, 490, 200, 50};
 
 // All drawing colors
 Color colors[] = {
@@ -371,6 +375,8 @@ void draw()
 
     ClearBackground(BLACK);
 
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+
     if (inSettings)
     {
         drawSettings();
@@ -419,21 +425,7 @@ void drawBoard(int cellIndex, int fontsize)
         return;
 
     // Change the opacity if the cell has no label that is part of the color filter
-    unsigned char opacity = 255;
-
-    for (int i = colorFilter.len() - 1; i >= 0; i--)
-    {
-        for (int j = board[cellIndex].labels.len() - 1; j >= 0; j--)
-        {
-            if (board[cellIndex].labels.get(j) == colorFilter.get(i))
-            {
-                opacity = 50;
-                break;
-            }
-        }
-        if (opacity == 50)
-            break;
-    }
+    unsigned char opacity = setOpacity(cellIndex);
 
     // If the cell is visible color it based on its value, else make it gray
     Color color = (board[cellIndex].visible) ? color = {255, (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), opacity} : Color{130, 130, 130, opacity};
@@ -503,6 +495,35 @@ void drawSettings()
         50,
         70,
         GRAY);
+
+    GuiSetStyle(DEFAULT, TEXT_SIZE, 30);
+
+    textWidth = MeasureText("Filter opacity used on board", 30) + 50;
+    DrawText(
+        "Filter opacity used on board",
+        WINDOW_WIDTH / 2 - textWidth,
+        400,
+        30,
+        GRAY);
+
+    if (GuiButton(guiFilterBoard, filterBoard ? "On" : "Off"))
+        filterBoard = !filterBoard;
+
+    textWidth = MeasureText("Filter opacity", 30) + 50;
+    DrawText(
+        "Filter opacity",
+        WINDOW_WIDTH / 2 - textWidth,
+        500,
+        30,
+        GRAY);
+
+    filterOpacity = GuiSlider(
+        guiFilterOpacity,
+        "0",
+        "255",
+        filterOpacity,
+        0,
+        255);
 }
 
 void drawControls()
@@ -572,6 +593,25 @@ void drawControls()
         145,
         30,
         GRAY);
+}
+
+unsigned char setOpacity(int cellIndex)
+{
+    if (colorFilter.len() == 0)
+        return 255;
+
+    for (int i = colorFilter.len() - 1; i >= 0; i--)
+    {
+        for (int j = board[cellIndex].labels.len() - 1; j >= 0; j--)
+        {
+            if (board[cellIndex].labels.get(j) == colorFilter.get(i))
+            {
+                return (filterBoard) ? 255 : filterOpacity;
+            }
+        }
+    }
+
+    return (filterBoard) ? filterOpacity : 255;
 }
 
 bool cellOnScreen(int cellIndex)
