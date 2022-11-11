@@ -4,21 +4,34 @@
 #include <raylib.h> // For the Vector2
 
 // Defines
-#define WINDOW_WIDTH 1920        // Width of the game window
-#define WINDOW_HEIGHT 1080       // Height of the game window
-#define FPS 60                   // Frames per second the game runs at
-#define GAP_BETWEEN_CELLS 2      // Amount of pixels between every cell
-#define GAP_BETWEEN_DIMENSIONS 5 // Amount of pixels between every nD dimension (set by extraSpaceThreshold variable)
-#define HIGHLIGHT_BORDER_SIZE 3  // Pixel thickness of the highlight border
-#define DEFAULT_CELLSIZE 40      // Default cellsize
-#define MAX_CELLSIZE 100         // Maximum cellsize
-#define MIN_CELLSIZE 5           // Minimum cellsize
-#define MIN_CELLSIZE_FOR_TEXT 20 // Minimum cellsize for the cell its value to be shown
-#define TEXT_CHAR_SPACING 2      // Amount of pixels between every character in drawn text
-#define GUI_HEIGHT 200           // Height of the gui
-#define EXTRA_SPACE_THRESHOLD 2  // The dimension at which axtra space
-#define MINE -1                  // Value of a mine
-#define OUT_OF_BOUNDS -1         // Value set if index is out of bounds or not relevant
+#define WINDOW_WIDTH 1920         // Width of the game window
+#define HALF_WINDOW_WIDTH 960     // Half the window width for centering
+#define WINDOW_HEIGHT 1080        // Height of the game window
+#define FPS 60                    // Frames per second the game runs at
+#define GAP_BETWEEN_CELLS 2       // Amount of pixels between every cell
+#define GAP_BETWEEN_DIMENSIONS 5  // Amount of pixels between every nD dimension (set by extraSpaceThreshold variable)
+#define HIGHLIGHT_BORDER_SIZE 3   // Pixel thickness of the highlight border
+#define DEFAULT_CELLSIZE 40       // Default cellsize
+#define MAX_CELLSIZE 100          // Maximum cellsize
+#define MIN_CELLSIZE 5            // Minimum cellsize
+#define MIN_CELLSIZE_FOR_TEXT 20  // Minimum cellsize for the cell its value to be shown
+#define TEXT_CHAR_SPACING 2       // Amount of pixels between every character in drawn text
+#define GUI_HEIGHT 200            // Height of the gui
+#define EXTRA_SPACE_THRESHOLD 2   // The dimension at which axtra space
+#define MINE -1                   // Value of a mine
+#define OUT_OF_BOUNDS -1          // Value set if index is out of bounds or not relevant
+#define LABELING_COLORS 24        // Amount of colors that can be used as a label
+#define COLORS_PER_ROW 8          // Labeling colors per row
+#define COLORS_PER_COLUMN 3       // Labeling colors per column
+#define DEFAULT_FILTER_OPACITY 75 // Default filter opacity
+#define GUI_TEXT_SIZE 20          // Text size for the gui
+#define GUI_TITLE_TEXT_SIZE 70    // Text size for the settings and conrtols tab titles
+#define TABS_TEXT_SIZE 30         // Text size for the gui in the settings and controls tab
+#define TABS_BORDERSIZE 20        // Border size for the settings and controls tab
+#define GUI_BORDERSIZE 10         // Border size for the game gui
+#define NUM_OVERFLOW 99           // Max number shown in cell
+#define NUM_OVERFLOW_TEXT "99+"   // The text that gets placed in the cell if the number is bigger then 99
+#define MIN_FONT_SIZE 10          // Minimum font size for the cell value
 
 // Node structure to store its data
 struct node
@@ -176,7 +189,7 @@ void draw();                                      // Draws everything on the scr
 void drawBoard(int, int);                         // Draws all the cells
 void drawSettings();                              // Draw the settings tab
 void drawControls();                              // Draw the controls tab
-unsigned char setOpacity(int);                    // Set the opacity based on the settings
+unsigned char setOpacity(cell *);                 // Set the opacity based on the settings
 bool cellOnScreen(int);                           // Checks if the cell is on the screen
 void calculateDrawCoords();                       // Calculates all the coordinates the cells have to be draw at and calls drawBoard
 void drawGui();                                   // Draws the gui
@@ -191,9 +204,62 @@ int getSubtraction(int, int);                     // Calculates the amount of su
 void getNeighbors(int *, int, int *, int, int *); // Calculates all the given cell its neighbors based on the index
 int *getTrueNeighbors(int);                       // Removes all the out of bounds neighbors gotton from getNeighbors
 void generateMines(int);                          // Generates all the mines
+void colorFilterAddRemove();                      // Add or remove a color label from the color filter
 void win();                                       // Handles everything after a winning
 void gameover();                                  // Handles everything after a losing
 int abs(int);                                     // Returns the positive version of the given number
 int pow(int, int);                                // Returns the outcome of n to the power p
+
+// All drawing colors
+Color colors[] = {
+    Color{255, 0, 0, 255},
+    Color{255, 136, 0, 255},
+    Color{255, 255, 0, 255},
+    Color{136, 0, 0, 255},
+    Color{136, 68, 0, 255},
+    Color{136, 136, 0, 255},
+    Color{0, 255, 0, 255},
+    Color{0, 255, 255, 255},
+    Color{0, 0, 255, 255},
+    Color{0, 136, 0, 255},
+    Color{0, 136, 136, 255},
+    Color{0, 0, 136, 255},
+    Color{136, 0, 255, 255},
+    Color{187, 0, 255, 255},
+    Color{255, 0, 255, 255},
+    Color{68, 0, 136, 255},
+    Color{102, 0, 136, 255},
+    Color{136, 0, 136, 255},
+    Color{255, 0, 136, 255},
+    Color{136, 136, 136, 255},
+    Color{255, 255, 255, 255},
+    Color{136, 0, 68, 255},
+    Color{68, 68, 68, 255},
+    Color{92, 64, 51, 255}};
+
+// All gui object positions
+Rectangle border1 = Rectangle{0, 0, 560, GUI_HEIGHT};
+Rectangle border2 = Rectangle{550, 0, 700, GUI_HEIGHT};
+Rectangle border3 = Rectangle{1240, 0, 475, GUI_HEIGHT};
+Rectangle border4 = Rectangle{1705, 0, 215, GUI_HEIGHT};
+Rectangle guiDimensionLabel = {50, 30, 70, 50};
+Rectangle guiDimension = {50, 80, 50, 50};
+Rectangle guiDimensionSizesDimensionLabel = {150, 30, 100, 50};
+Rectangle guiDimensionSizesDimension = {150, 80, 100, 50};
+Rectangle guiDimensionSizesValuesLabel = {260, 30, 50, 50};
+Rectangle guiDimensionSizesValues = {260, 80, 50, 50};
+Rectangle guiMinesLabel = {360, 30, 50, 50};
+Rectangle guiMines = {360, 80, 50, 50};
+Rectangle guiStart = {460, 80, 50, 50};
+Rectangle guiMovingLabel = {600, 30, 60, 50};
+Rectangle guiMoving = {600, 80, 50, 50};
+Rectangle guiDrawingLabel = {700, 30, 60, 50};
+Rectangle guiDrawing = {700, 80, 50, 50};
+Rectangle guiSettings = {1730, 65, 165, 50};
+Rectangle guiControls = {1730, 125, 165, 50};
+Rectangle guiBack = {1785, 35, 100, 50};
+Rectangle guiQuit = {1870, 25, 25, 25};
+Rectangle guiFilterBoard = {WINDOW_WIDTH / 2 + 50, 390, 200, 50};
+Rectangle guiFilterOpacity = {WINDOW_WIDTH / 2 + 50, 490, 200, 50};
 
 #endif

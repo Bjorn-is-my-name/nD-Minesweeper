@@ -4,7 +4,7 @@
 #include <raygui.h>           // For all the gui options
 #include <main.h>             // For all the defines, typedefines, structs, classes and function presets
 #include <string>             // For converting to const char * (c_str())
-
+#include <iostream>
 // Game variables
 int dimension;                                                                                           // Dimension in which the game is played
 int *dimensionSizes; /*minimum should be 1 but is 3 on dim 1 and 2 cuz still a bug in getTrueNeighbors*/ // Sizes of each dimension (width, length, depth etc...)
@@ -21,7 +21,7 @@ bool drawingMode = false;                                                       
 bool firstCellRevealed = false;                                                                          // Check when the first cell is clicked, generate mines after to always start with a 0
 int selectedColor;                                                                                       // The selected color in drawing mode
 bool filterBoard = true;                                                                                 // Filter out the board or the labeled cells
-unsigned char filterOpacity = 75;                                                                        // Opacity for the filtered out cells
+unsigned char filterOpacity = DEFAULT_FILTER_OPACITY;                                                    // Opacity for the filtered out cells
 
 Vector2 mousePosition;                        // The positions of the mouse
 int newDimension = 1;                         // The dimension for next game (changeable in the gui)
@@ -32,54 +32,6 @@ int newMines = 1;                             // the number of mines for next ga
 
 bool inSettings = false;
 bool inControls = false;
-
-// All gui object positions
-Rectangle guiDimensionLabel = {50, 30, 70, 50};
-Rectangle guiDimension = {50, 80, 50, 50};
-Rectangle guiDimensionSizesDimensionLabel = {150, 30, 100, 50};
-Rectangle guiDimensionSizesDimension = {150, 80, 100, 50};
-Rectangle guiDimensionSizesValuesLabel = {260, 30, 50, 50};
-Rectangle guiDimensionSizesValues = {260, 80, 50, 50};
-Rectangle guiMinesLabel = {360, 30, 50, 50};
-Rectangle guiMines = {360, 80, 50, 50};
-Rectangle guiStart = {460, 80, 50, 50};
-Rectangle guiMovingLabel = {600, 30, 60, 50};
-Rectangle guiMoving = {600, 80, 50, 50};
-Rectangle guiDrawingLabel = {700, 30, 60, 50};
-Rectangle guiDrawing = {700, 80, 50, 50};
-Rectangle guiSettings = {1730, 65, 165, 50};
-Rectangle guiControls = {1730, 125, 165, 50};
-Rectangle guiBack = {1785, 35, 100, 50};
-Rectangle guiQuit = {1870, 25, 25, 25};
-Rectangle guiFilterBoard = {WINDOW_WIDTH / 2 + 50, 390, 200, 50};
-Rectangle guiFilterOpacity = {WINDOW_WIDTH / 2 + 50, 490, 200, 50};
-
-// All drawing colors
-Color colors[] = {
-    Color{255, 0, 0, 255},
-    Color{255, 136, 0, 255},
-    Color{255, 255, 0, 255},
-    Color{136, 0, 0, 255},
-    Color{136, 68, 0, 255},
-    Color{136, 136, 0, 255},
-    Color{0, 255, 0, 255},
-    Color{0, 255, 255, 255},
-    Color{0, 0, 255, 255},
-    Color{0, 136, 0, 255},
-    Color{0, 136, 136, 255},
-    Color{0, 0, 136, 255},
-    Color{136, 0, 255, 255},
-    Color{187, 0, 255, 255},
-    Color{255, 0, 255, 255},
-    Color{68, 0, 136, 255},
-    Color{102, 0, 136, 255},
-    Color{136, 0, 136, 255},
-    Color{255, 0, 136, 255},
-    Color{136, 136, 136, 255},
-    Color{255, 255, 255, 255},
-    Color{136, 0, 68, 255},
-    Color{68, 68, 68, 255},
-    Color{92, 64, 51, 255}};
 
 DoublyLinkedList colorFilter;
 
@@ -143,38 +95,20 @@ void update()
 
         // Change selected color
         if (IsKeyPressed(KEY_W))
-            selectedColor += (selectedColor % 3 == 0) ? 2 : -1;
+            selectedColor += (selectedColor % COLORS_PER_COLUMN == 0) ? COLORS_PER_COLUMN - 1 : -1;
 
         if (IsKeyPressed(KEY_A))
-            selectedColor += (selectedColor < 3) ? 21 : -3;
+            selectedColor += (selectedColor < COLORS_PER_COLUMN) ? LABELING_COLORS - COLORS_PER_COLUMN : -COLORS_PER_COLUMN;
 
         if (IsKeyPressed(KEY_S))
-            selectedColor += (selectedColor % 3 == 2) ? -2 : 1;
+            selectedColor += (selectedColor % COLORS_PER_COLUMN == COLORS_PER_COLUMN - 1) ? -(COLORS_PER_COLUMN - 1) : 1;
 
         if (IsKeyPressed(KEY_D))
-            selectedColor += (selectedColor > 20) ? -21 : 3;
+            selectedColor += (selectedColor >= LABELING_COLORS - COLORS_PER_COLUMN) ? -(LABELING_COLORS - COLORS_PER_COLUMN) : COLORS_PER_COLUMN;
 
         // Add or remove color from color filter
         if (IsKeyPressed(KEY_F))
-        {
-            bool alreadyIn = false;
-            int colorIndex;
-
-            for (int i = colorFilter.len() - 1; i >= 0; i--)
-            {
-                if (colorFilter.get(i) == selectedColor)
-                {
-                    colorIndex = i;
-                    alreadyIn = true;
-                    break;
-                }
-            }
-
-            if (alreadyIn)
-                colorFilter.remove(colorIndex);
-            else
-                colorFilter.add(selectedColor);
-        }
+            colorFilterAddRemove();
 
         // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
         Vector2 mouseWheelMovement = GetMouseWheelMoveV();
@@ -193,6 +127,7 @@ void update()
             // Reveal the clicked cell
             if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
             {
+                // Never start on a mine
                 if (!firstCellRevealed)
                 {
                     int cellIndex = getCellIndexFromMouse();
@@ -202,11 +137,10 @@ void update()
                         firstCellRevealed = true;
                     }
                 }
-
                 revealCells();
             }
 
-            // Flag the clicked cell
+            // Flag or unflag the clicked cell
             if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT))
                 flagCell();
         }
@@ -214,7 +148,7 @@ void update()
         {
             if (movingMode)
             {
-                // Make the board move when holding right click
+                // Move the board on dragging with right mouse down
                 if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
                 {
                     Vector2 mouseDelta = GetMouseDelta();
@@ -243,7 +177,7 @@ void update()
             newDimensionSizesDimension++;
     }
 
-    // Start or stop game
+    // Start or stop the game
     if (IsKeyPressed(KEY_SPACE))
     {
         if (playing)
@@ -265,37 +199,45 @@ void revealCells()
 {
     int cellIndex = getCellIndexFromMouse();
 
-    // Return if no cell is clicked or it is already visible
-    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible)
+    // Return if no cell is clicked
+    if (cellIndex == OUT_OF_BOUNDS)
         return;
 
-    // If the cell is flagged, remove the flag
-    board[cellIndex].visible = true;
-    board[cellIndex].flagged = false;
-    board[cellIndex].labels.empty();
+    cell *cell = &board[cellIndex];
+
+    // Return if its already visible
+    if (cell->visible)
+        return;
+
+    // Remove the flag and labels if present
+    cell->visible = true;
+    cell->flagged = false;
+    cell->labels.empty();
 
     // If the cell is a mine, the player loses
-    if (board[cellIndex].value == MINE)
+    if (cell->value == MINE)
         gameover();
-    // If the cell has no neighbors that are mines, reveal them
-    else if (board[cellIndex].value == 0)
+    // If the cell has no mines around it, reveal the neighboring cells
+    else if (cell->value == 0)
         revealNeighbors(cellIndex);
 }
 
 void revealNeighbors(int cellIndex)
 {
-    // Reveal all the cell its neighbors (only called when cell value is 0) and recursively call if a neighbor is also 0
+    // Reveal all the neighbors, recursivly call if the're not surrounded by any mines either
     int *neighbors = getTrueNeighbors(cellIndex);
 
+    // Loop through all neighbors
     for (int i = pow(3, dimension) - 1; i >= 0; i--)
     {
         if (neighbors[i] != OUT_OF_BOUNDS && !board[neighbors[i]].visible)
         {
-            board[neighbors[i]].visible = true;
-            board[neighbors[i]].flagged = false;
-            board[cellIndex].labels.empty();
+            cell *cell = &board[neighbors[i]];
+            cell->visible = true;
+            cell->flagged = false;
+            cell->labels.empty();
 
-            if (board[neighbors[i]].value == 0)
+            if (cell->value == 0)
                 revealNeighbors(neighbors[i]);
         }
     }
@@ -308,24 +250,30 @@ void flagCell()
 {
     int cellIndex = getCellIndexFromMouse();
 
-    // Return if no cell is clicked or it is already visible
-    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible)
+    // Return if no cell is clicked
+    if (cellIndex == OUT_OF_BOUNDS)
+        return;
+
+    cell *cell = &board[cellIndex];
+
+    // Return if the cell is visible
+    if (cell->visible)
         return;
 
     // Flag or unflag the cell and update the flaggedMines counter if the cell was a mine
-    if (board[cellIndex].flagged)
+    if (cell->flagged)
     {
-        board[cellIndex].flagged = false;
+        cell->flagged = false;
 
-        if (board[cellIndex].value == MINE)
+        if (cell->value == MINE)
             flaggedMines--;
     }
     else
     {
-        board[cellIndex].flagged = true;
+        cell->flagged = true;
 
         // If the last mines is flagged, the player wins
-        if (board[cellIndex].value == MINE)
+        if (cell->value == MINE)
             if (++flaggedMines == mines)
                 win();
     }
@@ -334,39 +282,49 @@ void flagCell()
 void labelCell()
 {
     int cellIndex = getCellIndexFromMouse();
-    int labels = board[cellIndex].labels.len();
 
-    // Return if no cell is clicked or already has the selected color label
-    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible || labels == 24)
+    // Return if no cell is clicked
+    if (cellIndex == OUT_OF_BOUNDS)
         return;
 
-    for (int i = 0; i < labels; i++)
-        if (board[cellIndex].labels.get(i) == selectedColor)
+    cell *cell = &board[cellIndex];
+
+    // Return if the cell is visible
+    if (cell->visible)
+        return;
+
+    int numOfLabels = cell->labels.len();
+
+    // Return if the cell already has all the color labels
+    if (numOfLabels == LABELING_COLORS)
+        return;
+
+    // Return if the cell is already labeled with the selected color
+    for (int i = 0; i < numOfLabels; i++)
+        if (cell->labels.get(i) == selectedColor)
             return;
 
-    board[cellIndex].labels.add(selectedColor);
+    cell->labels.add(selectedColor);
 }
 
 void unlabelCell()
 {
     int cellIndex = getCellIndexFromMouse();
-    int labels = board[cellIndex].labels.len();
 
-    // Return if no cell is clicked or it doesn't have the color label
-    if (cellIndex == OUT_OF_BOUNDS || board[cellIndex].visible || labels == 0)
+    // Return if no cell is clicked
+    if (cellIndex == OUT_OF_BOUNDS)
         return;
 
-    int labelIndex = OUT_OF_BOUNDS;
+    cell *cell = &board[cellIndex];
 
-    // If the cell has the selected color its label, don't subtract 1 to prevent it from interfering with NULL check
-    for (int i = 0; i < labels; i++)
-        if (board[cellIndex].labels.get(i) == selectedColor)
-            labelIndex = i;
-
-    if (labelIndex == OUT_OF_BOUNDS)
+    // Return if the cell is visible
+    if (cell->visible)
         return;
 
-    board[cellIndex].labels.remove(labelIndex);
+    // If the cell has the color label, remove it
+    for (int i = cell->labels.len() - 1; i >= 0; i--)
+        if (cell->labels.get(i) == selectedColor)
+            cell->labels.remove(i);
 }
 
 void draw()
@@ -375,8 +333,9 @@ void draw()
 
     ClearBackground(BLACK);
 
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 20);
+    GuiSetStyle(DEFAULT, TEXT_SIZE, GUI_TEXT_SIZE);
 
+    // Draw the settings tab
     if (inSettings)
     {
         drawSettings();
@@ -384,6 +343,7 @@ void draw()
         return;
     }
 
+    // Draw the controls tab
     if (inControls)
     {
         drawControls();
@@ -394,22 +354,22 @@ void draw()
     // Draw all the cells and highlight if hovered over
     if (dimension != NULL)
     {
-        // Set the font size so the value fits in the cell
-        int fontsize = 1;
+        // Measure the max fontsize that makes the text fit in the cell
+        int fontsize = MIN_FONT_SIZE;
 
         if (cellsize > MIN_CELLSIZE_FOR_TEXT)
         {
-            // Increase the font size until the text no longer fits
-            Vector2 textSize = MeasureTextEx(GetFontDefault(), "99+", fontsize, TEXT_CHAR_SPACING);
+            Vector2 textSize = MeasureTextEx(GetFontDefault(), NUM_OVERFLOW_TEXT, fontsize, TEXT_CHAR_SPACING);
             while (std::max(textSize.x, textSize.y) < cellsize - HIGHLIGHT_BORDER_SIZE)
-                textSize = MeasureTextEx(GetFontDefault(), "99+", ++fontsize, TEXT_CHAR_SPACING);
+                textSize = MeasureTextEx(GetFontDefault(), NUM_OVERFLOW_TEXT, ++fontsize, TEXT_CHAR_SPACING);
         }
 
         // Draw all the cells
         for (int i = 0; i < cells; i++)
             drawBoard(i, fontsize);
 
-        highlightNeighbors();
+        if (playing)
+            highlightNeighbors();
     }
 
     // Draw the gui for user input
@@ -424,47 +384,54 @@ void drawBoard(int cellIndex, int fontsize)
     if (!cellOnScreen(cellIndex))
         return;
 
-    // Change the opacity if the cell has no label that is part of the color filter
-    unsigned char opacity = setOpacity(cellIndex);
+    cell *cell = &board[cellIndex];
 
-    // If the cell is visible color it based on its value, else make it gray
-    Color color = (board[cellIndex].visible) ? color = {255, (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), (unsigned char)(255 - std::min(board[cellIndex].value / 2, 10) * 25), opacity} : Color{130, 130, 130, opacity};
+    // Set the cell its opacity based on the color filter
+    unsigned char opacity = setOpacity(cell);
+
+    // If the cell is visible, color it based on its value, else make it gray
+    Color color = (cell->visible) ? Color{255, (unsigned char)(255 - std::min(cell->value / 2, 10) * 25), (unsigned char)(255 - std::min(cell->value / 2, 10) * 25), opacity} : Color{130, 130, 130, opacity};
 
     // Draw the cell
     DrawRectangle(
-        board[cellIndex].drawCoords.x + xOffset,
-        board[cellIndex].drawCoords.y + yOffset,
+        cell->drawCoords.x + xOffset,
+        cell->drawCoords.y + yOffset,
         cellsize,
         cellsize,
         color);
 
+    // Precalculate in order to save time because of mulitple use (divisions are slow)
+    int half = cellsize / 2;
+    int quart = cellsize / 4;
+    int tenth = cellsize / 10;
+
     // If the cell is flagged, draw a little flag
-    if (board[cellIndex].flagged)
+    if (cell->flagged)
     {
         DrawRectangle(
-            board[cellIndex].drawCoords.x + cellsize / 4 + xOffset,
-            board[cellIndex].drawCoords.y + yOffset,
-            cellsize / 10 + 0.5f,
+            cell->drawCoords.x + quart + xOffset,
+            cell->drawCoords.y + yOffset,
+            tenth + 0.5f,
             cellsize,
             BLACK);
 
         DrawTriangle(
             Vector2{
-                board[cellIndex].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
-                board[cellIndex].drawCoords.y + yOffset},
+                cell->drawCoords.x + quart + tenth + xOffset,
+                cell->drawCoords.y + yOffset},
             Vector2{
-                board[cellIndex].drawCoords.x + cellsize / 4 + cellsize / 10 + xOffset,
-                board[cellIndex].drawCoords.y + cellsize / 2 + yOffset},
+                cell->drawCoords.x + quart + tenth + xOffset,
+                cell->drawCoords.y + half + yOffset},
             Vector2{
-                board[cellIndex].drawCoords.x + cellsize * 0.9f + xOffset,
-                board[cellIndex].drawCoords.y + cellsize / 4 + yOffset},
+                cell->drawCoords.x + cellsize * 0.9f + xOffset,
+                cell->drawCoords.y + quart + yOffset},
             RED);
     }
 
     // Only draw the value if the cell is visible and the value is not 0
-    if (board[cellIndex].visible && cellsize > MIN_CELLSIZE_FOR_TEXT && board[cellIndex].value != 0)
+    if (cell->visible && cellsize > MIN_CELLSIZE_FOR_TEXT && cell->value != 0)
     {
-        std::string text = (board[cellIndex].value > 99) ? "99+" : std::to_string(board[cellIndex].value);
+        std::string text = (cell->value > NUM_OVERFLOW) ? NUM_OVERFLOW_TEXT : std::to_string(cell->value);
 
         // Measure the text size to be able to center the value in the square
         Vector2 textSize = MeasureTextEx(GetFontDefault(), text.c_str(), fontsize, TEXT_CHAR_SPACING);
@@ -474,8 +441,8 @@ void drawBoard(int cellIndex, int fontsize)
             GetFontDefault(),
             text.c_str(),
             Vector2{
-                board[cellIndex].drawCoords.x + ((cellsize / 2) - (textSize.x / 2)) + xOffset,
-                board[cellIndex].drawCoords.y + ((cellsize / 2) - (textSize.y / 2)) + yOffset},
+                cell->drawCoords.x + (half - textSize.x / 2) + xOffset,
+                cell->drawCoords.y + (half - textSize.y / 2) + yOffset},
             fontsize,
             TEXT_CHAR_SPACING,
             BLACK);
@@ -485,36 +452,36 @@ void drawBoard(int cellIndex, int fontsize)
 void drawSettings()
 {
     // Draw the border
-    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
+    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, TABS_BORDERSIZE, GRAY);
 
     // Draw te title
-    int textWidth = MeasureText("Settings", 70);
+    int textWidth = MeasureText("Settings", GUI_TITLE_TEXT_SIZE);
     DrawText(
         "Settings",
-        WINDOW_WIDTH / 2 - textWidth / 2,
+        HALF_WINDOW_WIDTH - textWidth / 2,
         50,
-        70,
+        GUI_TITLE_TEXT_SIZE,
         LIGHTGRAY);
 
-    GuiSetStyle(DEFAULT, TEXT_SIZE, 30);
+    GuiSetStyle(DEFAULT, TEXT_SIZE, TABS_TEXT_SIZE);
 
-    textWidth = MeasureText("Filter opacity used on board", 30) + 50;
+    textWidth = MeasureText("Filter opacity used on board", TABS_TEXT_SIZE) + 50;
     DrawText(
         "Filter opacity used on board",
-        WINDOW_WIDTH / 2 - textWidth,
+        HALF_WINDOW_WIDTH - textWidth,
         400,
-        30,
+        TABS_TEXT_SIZE,
         LIGHTGRAY);
 
     if (GuiButton(guiFilterBoard, filterBoard ? "On" : "Off"))
         filterBoard = !filterBoard;
 
-    textWidth = MeasureText("Filter opacity", 30) + 50;
+    textWidth = MeasureText("Filter opacity", TABS_TEXT_SIZE) + 50;
     DrawText(
         "Filter opacity",
-        WINDOW_WIDTH / 2 - textWidth,
+        HALF_WINDOW_WIDTH - textWidth,
         500,
-        30,
+        TABS_TEXT_SIZE,
         LIGHTGRAY);
 
     filterOpacity = GuiSlider(
@@ -534,19 +501,19 @@ void drawSettings()
 void drawControls()
 {
     // Draw the border
-    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 20, GRAY);
+    DrawRectangleLinesEx(Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, TABS_BORDERSIZE, GRAY);
 
     // Draw the title
-    int textWidth = MeasureText("Controls", 70);
+    int textWidth = MeasureText("Controls", GUI_TITLE_TEXT_SIZE);
     DrawText(
         "Controls",
-        WINDOW_WIDTH / 2 - textWidth / 2,
+        HALF_WINDOW_WIDTH - textWidth / 2,
         50,
-        70,
+        GUI_TITLE_TEXT_SIZE,
         LIGHTGRAY);
 
     // Draw all the controls
-    textWidth = MeasureText("Mouse Right    \n", 30);
+    textWidth = MeasureText("Mouse Right    \n", TABS_TEXT_SIZE);
     DrawText(
         "SPACE\n"
         "A\n"
@@ -568,9 +535,9 @@ void drawControls()
         "C\n"
         "B\n"
         "ESCAPE\n",
-        WINDOW_WIDTH / 2 - 200 - textWidth,
+        HALF_WINDOW_WIDTH - 200 - textWidth,
         145,
-        30,
+        TABS_TEXT_SIZE,
         LIGHTGRAY);
 
     DrawText(
@@ -594,9 +561,9 @@ void drawControls()
         "-    Controls\n"
         "-    Exit (exit the settings/controls tab)\n"
         "-    Quit (quit the game)\n",
-        WINDOW_WIDTH / 2 - 200,
+        HALF_WINDOW_WIDTH - 200,
         145,
-        30,
+        TABS_TEXT_SIZE,
         LIGHTGRAY);
 
     if (GuiButton(guiQuit, ""))
@@ -605,16 +572,16 @@ void drawControls()
     DrawLine(WINDOW_WIDTH - 30, 30, WINDOW_WIDTH - 45, 45, LIGHTGRAY);
 }
 
-unsigned char setOpacity(int cellIndex)
+unsigned char setOpacity(cell *cell)
 {
     if (colorFilter.len() == 0)
         return 255;
 
     for (int i = colorFilter.len() - 1; i >= 0; i--)
     {
-        for (int j = board[cellIndex].labels.len() - 1; j >= 0; j--)
+        for (int j = cell->labels.len() - 1; j >= 0; j--)
         {
-            if (board[cellIndex].labels.get(j) == colorFilter.get(i))
+            if (cell->labels.get(j) == colorFilter.get(i))
             {
                 return (filterBoard) ? 255 : filterOpacity;
             }
@@ -626,7 +593,8 @@ unsigned char setOpacity(int cellIndex)
 
 bool cellOnScreen(int cellIndex)
 {
-    return board[cellIndex].drawCoords.x + cellsize + xOffset > 0 && board[cellIndex].drawCoords.x + xOffset < WINDOW_WIDTH && board[cellIndex].drawCoords.y + cellsize + yOffset > GUI_HEIGHT && board[cellIndex].drawCoords.y + yOffset < WINDOW_HEIGHT;
+    Vector2 coords = board[cellIndex].drawCoords;
+    return coords.x + cellsize + xOffset > 0 && coords.x + xOffset < WINDOW_WIDTH && coords.y + cellsize + yOffset > GUI_HEIGHT && coords.y + yOffset < WINDOW_HEIGHT;
 }
 
 void calculateDrawCoords()
@@ -679,8 +647,9 @@ void calculateDrawCoords()
         }
 
         // Set the drawing coords
-        board[i].drawCoords.x = board[i].coords.x * (cellsize + GAP_BETWEEN_CELLS) + (x * GAP_BETWEEN_DIMENSIONS);
-        board[i].drawCoords.y = board[i].coords.y * (cellsize + GAP_BETWEEN_CELLS) + (y * GAP_BETWEEN_DIMENSIONS);
+        cell *cell = &board[i];
+        cell->drawCoords.x = cell->coords.x * (cellsize + GAP_BETWEEN_CELLS) + (x * GAP_BETWEEN_DIMENSIONS);
+        cell->drawCoords.y = cell->coords.y * (cellsize + GAP_BETWEEN_CELLS) + (y * GAP_BETWEEN_DIMENSIONS);
     }
 }
 
@@ -688,10 +657,10 @@ void drawGui()
 {
     // Draw the background and borders
     DrawRectangle(0, 0, WINDOW_WIDTH, GUI_HEIGHT, BLACK);
-    DrawRectangleLinesEx(Rectangle{0, 0, 560, GUI_HEIGHT}, 10, GRAY);
-    DrawRectangleLinesEx(Rectangle{550, 0, 700, GUI_HEIGHT}, 10, GRAY);
-    DrawRectangleLinesEx(Rectangle{1240, 0, 475, GUI_HEIGHT}, 10, GRAY);
-    DrawRectangleLinesEx(Rectangle{1705, 0, 215, GUI_HEIGHT}, 10, GRAY);
+    DrawRectangleLinesEx(border1, GUI_BORDERSIZE, GRAY);
+    DrawRectangleLinesEx(border2, GUI_BORDERSIZE, GRAY);
+    DrawRectangleLinesEx(border3, GUI_BORDERSIZE, GRAY);
+    DrawRectangleLinesEx(border4, GUI_BORDERSIZE, GRAY);
 
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
         mousePosition = GetMousePosition();
@@ -795,11 +764,11 @@ void drawGui()
         drawingMode = !drawingMode;
 
     // Color options
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < COLORS_PER_ROW; i++)
     {
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < COLORS_PER_COLUMN; j++)
         {
-            int colorIndex = j + i * 3;
+            int colorIndex = j + i * COLORS_PER_COLUMN;
             if (GuiButton(Rectangle{(float)(800 + i * 55), (float)(25 + j * 55), 40, 40}, ""))
                 selectedColor = colorIndex;
 
@@ -827,10 +796,10 @@ void drawGui()
             int i = 0;
             for (int j = 0; j < size; j++)
             {
-                DrawRectangle(1265 + j % 8 * 55, 25 + i * 55, 40, 40, colors[board[cellIndex].labels.get(j)]);
-                DrawRectangleLinesEx(Rectangle{(float)(1265 + j % 8 * 55), (float)(25 + i * 55), 40, 40}, 2, LIGHTGRAY);
+                DrawRectangle(1265 + j % COLORS_PER_ROW * 55, 25 + i * 55, 40, 40, colors[board[cellIndex].labels.get(j)]);
+                DrawRectangleLinesEx(Rectangle{(float)(1265 + j % COLORS_PER_ROW * 55), (float)(25 + i * 55), 40, 40}, 2, LIGHTGRAY);
 
-                if ((j + 1) % 8 == 0)
+                if ((j + 1) % COLORS_PER_ROW == 0)
                     i++;
             }
         }
@@ -857,27 +826,22 @@ int getCellIndexFromMouse()
 {
     // Get the index of the cell the mouse is hovering over
     if (GetMousePosition().y < GUI_HEIGHT)
-        return -1;
+        return OUT_OF_BOUNDS;
 
     mousePosition = GetMousePosition();
-    int cellIndex = OUT_OF_BOUNDS;
 
     for (int i = 0; i < cells; i++)
-    {
         if (mouseInCellBounds(i))
-        {
-            cellIndex = i;
-            break;
-        }
-    }
+            return i;
 
-    return cellIndex;
+    return OUT_OF_BOUNDS;
 }
 
 bool mouseInCellBounds(int cellIndex)
 {
     // Check if the mouse positions is in the cell
-    return mousePosition.x >= board[cellIndex].drawCoords.x + xOffset && mousePosition.x <= board[cellIndex].drawCoords.x + cellsize + GAP_BETWEEN_CELLS + xOffset && mousePosition.y >= board[cellIndex].drawCoords.y + yOffset && mousePosition.y <= board[cellIndex].drawCoords.y + cellsize + GAP_BETWEEN_CELLS + yOffset;
+    Vector2 coords = board[cellIndex].drawCoords;
+    return mousePosition.x >= coords.x + xOffset && mousePosition.x <= coords.x + cellsize + GAP_BETWEEN_CELLS + xOffset && mousePosition.y >= coords.y + yOffset && mousePosition.y <= coords.y + cellsize + GAP_BETWEEN_CELLS + yOffset;
 }
 
 void highlightNeighbors()
@@ -893,10 +857,11 @@ void highlightNeighbors()
         {
             if (neighbors[i] != OUT_OF_BOUNDS && cellOnScreen(neighbors[i]))
             {
+                cell *cell = &board[neighbors[i]];
                 DrawRectangleLinesEx(
                     Rectangle{
-                        board[neighbors[i]].drawCoords.x + xOffset,
-                        board[neighbors[i]].drawCoords.y + yOffset,
+                        cell->drawCoords.x + xOffset,
+                        cell->drawCoords.y + yOffset,
                         (float)cellsize,
                         (float)cellsize},
                     HIGHLIGHT_BORDER_SIZE,
@@ -931,9 +896,9 @@ void setupGame()
     cellsize = DEFAULT_CELLSIZE;
     xOffset = 50;
     yOffset = 50 + GUI_HEIGHT;
-    movingMode = false;
-    drawingMode = false;
     selectedColor = 0;
+    colorFilter.empty();
+    firstCellRevealed = false;
 
     setupBoard();
     calculateDrawCoords();
@@ -981,8 +946,9 @@ void setupBoard()
         }
 
         // Set the cell its coords
-        board[i].coords.x = x - 1;
-        board[i].coords.y = y;
+        cell *cell = &board[i];
+        cell->coords.x = x - 1;
+        cell->coords.y = y;
     }
 }
 
@@ -1101,9 +1067,9 @@ void generateMines(int cellIndex)
     for (int i = 0; i < mines; i++)
     {
         // Set a random cell as mine
-        int cell = GetRandomValue(0, freeSpots.len() - 1);
-        int randomCell = freeSpots.get(cell);
-        freeSpots.remove(cell);
+        int randomIndex = GetRandomValue(0, freeSpots.len() - 1);
+        int randomCell = freeSpots.get(randomIndex);
+        freeSpots.remove(randomIndex);
 
         board[randomCell].value = MINE;
 
@@ -1114,10 +1080,9 @@ void generateMines(int cellIndex)
         {
             if (neighbors[j] != OUT_OF_BOUNDS)
             {
-                if (board[neighbors[j]].value != MINE)
-                {
-                    board[neighbors[j]].value++;
-                }
+                cell *cell = &board[neighbors[j]];
+                if (cell->value != MINE)
+                    cell->value++;
             }
         }
 
@@ -1128,12 +1093,26 @@ void generateMines(int cellIndex)
     freeSpots.empty();
 }
 
+void colorFilterAddRemove()
+{
+    // If the color is in the list, remove it, else add it
+    for (int i = colorFilter.len() - 1; i >= 0; i--)
+    {
+        if (colorFilter.get(i) == selectedColor)
+        {
+            colorFilter.remove(i);
+            return;
+        }
+    }
+
+    colorFilter.add(selectedColor);
+}
+
 void win()
 {
     playing = false;
     movingMode = false;
     drawingMode = false;
-    firstCellRevealed = false;
 }
 
 void gameover()
@@ -1141,7 +1120,6 @@ void gameover()
     playing = false;
     movingMode = false;
     drawingMode = false;
-    firstCellRevealed = false;
 }
 
 int abs(int n)
