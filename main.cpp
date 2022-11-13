@@ -45,6 +45,8 @@ main(void)
 
     // load a custom gui style
     GuiLoadStyle("C:/Users/bjorn/Documents/CPlusPlusFiles/nD-Minesweeper/guiStyle.rgs");
+    GuiSetStyle(VALUEBOX, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
+    GuiSetStyle(VALUEBOX, TEXT_PADDING, 0);
 
     // Game loop
     while (!WindowShouldClose())

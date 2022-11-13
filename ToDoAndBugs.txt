@@ -9,8 +9,6 @@ Number holder must be dynamic so it can be 128 bits but also other sizes (start 
 
 
 NON BUGS THAT STILL BUG ME:
-Try to center numbers in gui (the're slight offcenter to the left)
-
 Try to clean op the code a bit more
 Not an insane amount of defines but also not have all magic numbers
 Add needed comments, dont add them when the action is obvious
