@@ -1,35 +1,34 @@
-// Includes
-#include <raylib.h>           // For all the graphical work
-#define RAYGUI_IMPLEMENTATION // A define to let Raygui know its used together with Raylib and not used by itself
-#include <raygui.h>           // For all the gui options
-#include <main.h>             // For all the defines, typedefines, structs, classes and function presets
-#include <string>             // For converting to const char * (c_str())
+#include <raylib.h>
+#define RAYGUI_IMPLEMENTATION
+#include <raygui.h>
+#include <main.h>
+#include <string>
+#include <math.h>
+#include <vector>
 
-// Game variables
-int dimension;                                        // Dimension in which the game is played
-int *dimensionSizes;                                  // Sizes of each dimension (width, length, depth etc...)
-int cells;                                            // Total number of cells
-cell *board;                                          // Board which stores all the cells
-int mines;                                            // Number of mines
-int flaggedMines;                                     // The number of mines flagged
-int cellsize;                                         // Changeable cellsize by scrolling
-int xOffset;                                          // X offset for moving the board around
-int yOffset;                                          // Y offset for moving the board around
-bool playing = false;                                 // To keep track of the game state
-bool movingMode = false;                              // Allow the user to move the board with right mouse
-bool drawingMode = false;                             // Allow the user to color label cells with left mouse
-bool firstCellRevealed = false;                       // Check when the first cell is clicked, generate mines after to always start with a 0
-int selectedColor;                                    // The selected color in drawing mode
-bool filterBoard = true;                              // Filter out the board or the labeled cells
-unsigned char filterOpacity = DEFAULT_FILTER_OPACITY; // Opacity for the filtered out cells
+int dimension;
+int *dimensionSizes; // width, length, height etc...
+int totalCells;
+cell *board;
+int mines;
+int flaggedMines;
+int cellsize;
+Vector2 drawingOffset;
+bool playing = false;
+bool movingMode = false;
+bool drawingMode = false;
+bool firstCellRevealed = false;
+int selectedColor;
+bool useFilterOnBoard = true;
+unsigned char filterOpacity = DEFAULT_FILTER_OPACITY;
 
-Vector2 mousePosition;                        // The positions of the mouse
-int newDimension = 1;                         // The dimension for next game (changeable in the gui)
-int newDimensionOld = 1;                      // The dimension for next game before changed by user (used to copy dimension sizes as the dimension changes)
-int newDimensionSizesDimension = 1;           // The dimension of which the size is changeable (changeable in the gui)
-int *newDimensionSizesValues = new int[1]{1}; // The size of the dimension selected (changeable in the gui)
-char newMinesInput[10] = "1";                 // The text input from user for the number of mines
-int newMines = 1;                             // The number of mines for next game
+Vector2 mousePosition;
+int newDimension = 1;
+int newDimensionOld = 1;
+int newDimensionSizesDimension = 1;
+int *newDimensionSizesValues = new int[1]{1};
+char newMinesInput[10] = "1";
+int newMines = 1;
 
 bool inSettings = false;
 bool inControls = false;
@@ -43,12 +42,11 @@ main(void)
     ToggleFullscreen();
     SetTargetFPS(FPS);
 
-    // load a custom gui style
+    // Set up the global gui style
     GuiLoadStyle("C:/Users/bjorn/Documents/CPlusPlusFiles/nD-Minesweeper/guiStyle.rgs");
     GuiSetStyle(VALUEBOX, TEXT_ALIGNMENT, TEXT_ALIGN_CENTER);
     GuiSetStyle(VALUEBOX, TEXT_PADDING, 0);
 
-    // Game loop
     while (!WindowShouldClose())
     {
         update();
@@ -62,10 +60,8 @@ main(void)
 
 void quit()
 {
-    // Close everything down
     CloseWindow();
 
-    // Deallocate all the memory
     delete[] board;
     board = nullptr;
 }
@@ -88,38 +84,37 @@ void update()
 
     if (playing)
     {
-        // Turn moving mode on or off
         if (IsKeyReleased(KEY_M))
             movingMode = !movingMode;
 
-        // Turn drawing mode on or off
         if (IsKeyReleased(KEY_L))
             drawingMode = !drawingMode;
 
         // Change selected color
+        // Go one up, if at top go back to bottom
         if (IsKeyPressed(KEY_W))
             selectedColor += (selectedColor % COLORS_PER_COLUMN == 0) ? COLORS_PER_COLUMN - 1 : -1;
-
+        // Go one left, if at first of row go back to the end
         if (IsKeyPressed(KEY_A))
             selectedColor += (selectedColor < COLORS_PER_COLUMN) ? LABELING_COLORS - COLORS_PER_COLUMN : -COLORS_PER_COLUMN;
-
+        // Go one down, if at bottom go back to top
         if (IsKeyPressed(KEY_S))
             selectedColor += (selectedColor % COLORS_PER_COLUMN == COLORS_PER_COLUMN - 1) ? -(COLORS_PER_COLUMN - 1) : 1;
-
+        // Go one right, if at last of row go back to first
         if (IsKeyPressed(KEY_D))
             selectedColor += (selectedColor >= LABELING_COLORS - COLORS_PER_COLUMN) ? -(LABELING_COLORS - COLORS_PER_COLUMN) : COLORS_PER_COLUMN;
 
-        // Add or remove color from color filter
+        // Add or remove selected color
         if (IsKeyPressed(KEY_F))
-            colorFilterAddRemove();
+            changeColorFilter();
 
-        // If the mouse wheel is moved, zoom in or out and recalculate the drawing coords
-        Vector2 mouseWheelMovement = GetMouseWheelMoveV();
-        if (mouseWheelMovement.y != 0)
+        // Zoom in or out based on scroll wheel movement
+        int mouseWheelY = GetMouseWheelMoveV().y;
+        if (mouseWheelY != 0)
         {
-            if (mouseWheelMovement.y > 0 && cellsize < MAX_CELLSIZE)
+            if (mouseWheelY > 0 && cellsize < MAX_CELLSIZE)
                 cellsize++;
-            else if (mouseWheelMovement.y < 0 && cellsize > MIN_CELLSIZE)
+            else if (mouseWheelY < 0 && cellsize > MIN_CELLSIZE)
                 cellsize--;
 
             calculateDrawCoords();
@@ -155,8 +150,8 @@ void update()
                 if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
                 {
                     Vector2 mouseDelta = GetMouseDelta();
-                    xOffset += mouseDelta.x;
-                    yOffset += mouseDelta.y;
+                    drawingOffset.x += mouseDelta.x;
+                    drawingOffset.y += mouseDelta.y;
                 }
             }
 
@@ -165,7 +160,8 @@ void update()
                 // Label or unlabel the cell
                 if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))
                     labelCell();
-                else if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) && !movingMode)
+
+                if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT) && !movingMode)
                     unlabelCell();
             }
         }
@@ -368,7 +364,7 @@ void draw()
         }
 
         // Draw all the cells
-        for (int i = 0; i < cells; i++)
+        for (int i = 0; i < totalCells; i++)
             drawBoard(i, fontsize);
 
         if (playing)
@@ -397,8 +393,8 @@ void drawBoard(int cellIndex, int fontsize)
 
     // Draw the cell
     DrawRectangle(
-        cell->drawCoords.x + xOffset,
-        cell->drawCoords.y + yOffset,
+        cell->drawCoords.x + drawingOffset.x,
+        cell->drawCoords.y + drawingOffset.y,
         cellsize,
         cellsize,
         color);
@@ -412,22 +408,22 @@ void drawBoard(int cellIndex, int fontsize)
     if (cell->flagged)
     {
         DrawRectangle(
-            cell->drawCoords.x + quart + xOffset,
-            cell->drawCoords.y + yOffset,
+            cell->drawCoords.x + quart + drawingOffset.x,
+            cell->drawCoords.y + drawingOffset.y,
             tenth + 0.5f,
             cellsize,
             BLACK);
 
         DrawTriangle(
             Vector2{
-                cell->drawCoords.x + quart + tenth + xOffset,
-                cell->drawCoords.y + yOffset},
+                cell->drawCoords.x + quart + tenth + drawingOffset.x,
+                cell->drawCoords.y + drawingOffset.y},
             Vector2{
-                cell->drawCoords.x + quart + tenth + xOffset,
-                cell->drawCoords.y + half + yOffset},
+                cell->drawCoords.x + quart + tenth + drawingOffset.x,
+                cell->drawCoords.y + half + drawingOffset.y},
             Vector2{
-                cell->drawCoords.x + cellsize * 0.9f + xOffset,
-                cell->drawCoords.y + quart + yOffset},
+                cell->drawCoords.x + cellsize * 0.9f + drawingOffset.x,
+                cell->drawCoords.y + quart + drawingOffset.y},
             RED);
     }
 
@@ -444,8 +440,8 @@ void drawBoard(int cellIndex, int fontsize)
             GetFontDefault(),
             text.c_str(),
             Vector2{
-                cell->drawCoords.x + (half - textSize.x / 2) + xOffset,
-                cell->drawCoords.y + (half - textSize.y / 2) + yOffset},
+                cell->drawCoords.x + (half - textSize.x / 2) + drawingOffset.x,
+                cell->drawCoords.y + (half - textSize.y / 2) + drawingOffset.y},
             fontsize,
             TEXT_CHAR_SPACING,
             BLACK);
@@ -476,8 +472,8 @@ void drawSettings()
         TABS_TEXT_SIZE,
         LIGHTGRAY);
 
-    if (GuiButton(guiFilterBoard, filterBoard ? "On" : "Off"))
-        filterBoard = !filterBoard;
+    if (GuiButton(guiFilterBoard, useFilterOnBoard ? "On" : "Off"))
+        useFilterOnBoard = !useFilterOnBoard;
 
     textWidth = MeasureText("Filter opacity", TABS_TEXT_SIZE) + 50;
     DrawText(
@@ -586,18 +582,18 @@ unsigned char setOpacity(cell *cell)
         {
             if (cell->labels.get(j) == colorFilter.get(i))
             {
-                return (filterBoard) ? 255 : filterOpacity;
+                return (useFilterOnBoard) ? 255 : filterOpacity;
             }
         }
     }
 
-    return (filterBoard) ? filterOpacity : 255;
+    return (useFilterOnBoard) ? filterOpacity : 255;
 }
 
 bool cellOnScreen(int cellIndex)
 {
     Vector2 coords = board[cellIndex].drawCoords;
-    return coords.x + cellsize + xOffset > 0 && coords.x + xOffset < WINDOW_WIDTH && coords.y + cellsize + yOffset > GUI_HEIGHT && coords.y + yOffset < WINDOW_HEIGHT;
+    return coords.x + cellsize + drawingOffset.x > 0 && coords.x + drawingOffset.x < WINDOW_WIDTH && coords.y + cellsize + drawingOffset.y > GUI_HEIGHT && coords.y + drawingOffset.y < WINDOW_HEIGHT;
 }
 
 void calculateDrawCoords()
@@ -612,7 +608,7 @@ void calculateDrawCoords()
     for (int i = 1; i < dimension; i++)
         sizes[i] = dimensionSizes[i] - 1;
 
-    for (int i = 0; i < cells; i++)
+    for (int i = 0; i < totalCells; i++)
     {
         for (int j = 0; j < dimension; j++)
         {
@@ -867,7 +863,7 @@ int getCellIndexFromMouse()
 
     mousePosition = GetMousePosition();
 
-    for (int i = 0; i < cells; i++)
+    for (int i = 0; i < totalCells; i++)
         if (mouseInCellBounds(i))
             return i;
 
@@ -878,7 +874,7 @@ bool mouseInCellBounds(int cellIndex)
 {
     // Check if the mouse positions is in the cell
     Vector2 coords = board[cellIndex].drawCoords;
-    return mousePosition.x >= coords.x + xOffset && mousePosition.x <= coords.x + cellsize + GAP_BETWEEN_CELLS + xOffset && mousePosition.y >= coords.y + yOffset && mousePosition.y <= coords.y + cellsize + GAP_BETWEEN_CELLS + yOffset;
+    return mousePosition.x >= coords.x + drawingOffset.x && mousePosition.x <= coords.x + cellsize + GAP_BETWEEN_CELLS + drawingOffset.x && mousePosition.y >= coords.y + drawingOffset.y && mousePosition.y <= coords.y + cellsize + GAP_BETWEEN_CELLS + drawingOffset.y;
 }
 
 void highlightNeighbors()
@@ -897,8 +893,8 @@ void highlightNeighbors()
                 cell *cell = &board[neighbors[i]];
                 DrawRectangleLinesEx(
                     Rectangle{
-                        cell->drawCoords.x + xOffset,
-                        cell->drawCoords.y + yOffset,
+                        cell->drawCoords.x + drawingOffset.x,
+                        cell->drawCoords.y + drawingOffset.y,
                         (float)cellsize,
                         (float)cellsize},
                     HIGHLIGHT_BORDER_SIZE,
@@ -922,16 +918,16 @@ void setupGame()
     for (int i = 0; i < dimension; i++)
         dimensionSizes[i] = newDimensionSizesValues[i];
 
-    cells = getTotalSize(dimension);
+    totalCells = getTotalSize(dimension);
 
     delete[] board;
-    board = new cell[cells];
+    board = new cell[totalCells];
 
     mines = newMines;
     flaggedMines = 0;
     cellsize = DEFAULT_CELLSIZE;
-    xOffset = 50;
-    yOffset = 50 + GUI_HEIGHT;
+    drawingOffset.x = 50;
+    drawingOffset.y = 50 + GUI_HEIGHT;
     selectedColor = 0;
     colorFilter.empty();
     firstCellRevealed = false;
@@ -954,7 +950,7 @@ void setupBoard()
     for (int i = 1; i < dimension; i++)
         sizes[i] = dimensionSizes[i] - 1;
 
-    for (int i = 0; i < cells; i++)
+    for (int i = 0; i < totalCells; i++)
     {
         for (int j = 0; j < dimension; j++)
         {
@@ -1063,7 +1059,7 @@ int *getTrueNeighbors(int cellIndex)
 
     for (int i = 0; i < counter; i++)
     {
-        if (neighbors[i] >= 0 && neighbors[i] < cells)
+        if (neighbors[i] >= 0 && neighbors[i] < totalCells)
         {
             bool outOfBounds = false;
             int threshold = 1;
@@ -1096,10 +1092,10 @@ void generateMines(int cellIndex)
 
     // Keep track of the free spots
     DoublyLinkedList freeSpots;
-    for (int i = 0; i < cells; i++)
+    for (int i = 0; i < totalCells; i++)
         freeSpots.add(i);
 
-    if (mines < cells)
+    if (mines < totalCells)
         freeSpots.remove(cellIndex);
 
     for (int i = 0; i < mines; i++)
@@ -1131,7 +1127,7 @@ void generateMines(int cellIndex)
     freeSpots.empty();
 }
 
-void colorFilterAddRemove()
+void changeColorFilter()
 {
     // If the color is in the list, remove it, else add it
     for (int i = colorFilter.len() - 1; i >= 0; i--)
@@ -1158,19 +1154,4 @@ void gameover()
     playing = false;
     movingMode = false;
     drawingMode = false;
-}
-
-int abs(int n)
-{
-    // Return the positive version of the number
-    return (n < 0) ? n * -1 : n;
-}
-
-int pow(int n, int p)
-{
-    // Return n to the power of p
-    int o = n;
-    while (--p > 0)
-        o *= n;
-    return o;
 }

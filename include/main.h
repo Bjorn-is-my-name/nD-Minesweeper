@@ -204,11 +204,9 @@ int getSubtraction(int, int);                     // Calculates the amount of su
 void getNeighbors(int *, int, int *, int, int *); // Calculates all the given cell its neighbors based on the index
 int *getTrueNeighbors(int);                       // Removes all the out of bounds neighbors gotton from getNeighbors
 void generateMines(int);                          // Generates all the mines
-void colorFilterAddRemove();                      // Add or remove a color label from the color filter
+void changeColorFilter();                         // Add or remove a color label from the color filter
 void win();                                       // Handles everything after a winning
 void gameover();                                  // Handles everything after a losing
-int abs(int);                                     // Returns the positive version of the given number
-int pow(int, int);                                // Returns the outcome of n to the power p
 
 // All drawing colors
 Color colors[] = {
