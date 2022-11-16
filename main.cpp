@@ -27,7 +27,7 @@ int newDimension = 1;
 int newDimensionOld = 1;
 int newDimensionSizesDimension = 1;
 int *newDimensionSizesValues = new int[1]{1};
-char newMinesInput[10] = "1";
+char newMinesInput[11] = "1";
 int newMines = 1;
 
 bool inSettings = false;
@@ -676,7 +676,7 @@ void drawGui()
             NULL,
             &newDimension,
             1,
-            7,
+            6,
             CheckCollisionPointRec(mousePosition, guiDimension)))
     {
         // If the dimension is changed, update dimensionSizes but keep already set values intact
@@ -725,7 +725,7 @@ void drawGui()
         NULL,
         &newDimensionSizesValues[(newDimensionSizesDimension > 0 && newDimensionSizesDimension <= newDimension) ? newDimensionSizesDimension - 1 : ((newDimensionSizesDimension <= 0 || newDimension == 0) ? 0 : newDimension - 1)],
         1,
-        20,
+        10,
         CheckCollisionPointRec(mousePosition, guiDimensionSizesValues));
 
     // Mines
