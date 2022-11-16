@@ -4,7 +4,7 @@ STUPID ASS BUGS LISTED BELOW:
 Bug in getTrueNeighbors miscalculates neighbors if dimension 1 and/or 2 has a size less then 3
 
 A lot of bugs with big numbers, need to make custom bigger number holder (so larger then 64 bits).
-Number holder must be dynamic so it can be 128 bits but also other sizes (start at 32 bits, increase by 32 every time running out of space)
+Number holder must be dynamic
 
 
 

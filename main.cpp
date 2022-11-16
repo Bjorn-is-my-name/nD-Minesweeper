@@ -4,7 +4,6 @@
 #include <main.h>
 #include <string>
 #include <math.h>
-#include <vector>
 
 int dimension;
 int *dimensionSizes; // width, length, height etc...
