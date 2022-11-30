@@ -34,24 +34,26 @@
 #define MIN_FONT_SIZE 10          // Minimum font size for the cell value
 
 // Node structure to store its data
+template <typename T>
 struct node
 {
-    int value;  // Value of the node
-    node *prev; // Address of the previous node
-    node *next; // Address of the previous node
+    T value;       // Value of the node
+    node<T> *prev; // Address of the previous node
+    node<T> *next; // Address of the previous node
 };
 
 // Doubly linked list class to store nodes
+template <typename T>
 class DoublyLinkedList
 {
 private:
-    node *head; // Fisrt node in the list
-    int size;   // Size of the list
+    node<T> *head; // Fisrt node in the list
+    int size;      // Size of the list
 
     // Get a new node
-    node *getNewNode(int value)
+    node<T> *getNewNode(T value)
     {
-        node *newNode = new node();
+        node<T> *newNode = new node<T>();
         newNode->value = value;
         newNode->next = NULL;
         newNode->prev = NULL;
@@ -67,9 +69,9 @@ public:
     }
 
     // Add a node to the list
-    void add(int value)
+    void add(T value)
     {
-        node *n = getNewNode(value);
+        node<T> *n = getNewNode(value);
         size++;
 
         if (head == NULL)
@@ -78,7 +80,7 @@ public:
             return;
         }
 
-        node *last = head;
+        node<T> *last = head;
 
         while (last->next != NULL)
             last = last->next;
@@ -90,7 +92,7 @@ public:
     // Get a node its value
     int get(int index)
     {
-        node *n = head;
+        node<T> *n = head;
 
         while (index-- > 0)
             n = n->next;
@@ -101,7 +103,7 @@ public:
     // Remove a node from the list
     void remove(int index)
     {
-        node *n = head;
+        node<T> *n = head;
         size--;
 
         if (index == 0)
@@ -139,7 +141,7 @@ public:
     // Remove all nodes from the list
     void empty()
     {
-        node *n;
+        node<T> *n;
         size = 0;
 
         while (head != NULL)
@@ -165,7 +167,7 @@ struct cell
     int value;          // Number of neighbors that are bombs
     bool visible;       // State of the cell (revealed or not)
     bool flagged;       // State of the cell (flagged or not)
-    DoublyLinkedList labels;
+    DoublyLinkedList<int> labels;
 
     // Set everything on initialization
     cell()
@@ -251,8 +253,8 @@ Rectangle guiMines = {340, 80, 100, 50};
 Rectangle guiStart = {470, 80, 50, 50};
 Rectangle guiMovingLabel = {610, 30, 60, 50};
 Rectangle guiMoving = {610, 80, 50, 50};
-Rectangle guiDrawingLabel = {700, 30, 60, 50};
-Rectangle guiDrawing = {700, 80, 50, 50};
+Rectangle guiLabelingLabel = {700, 30, 60, 50};
+Rectangle guiLabeling = {700, 80, 50, 50};
 Rectangle guiSettings = {1730, 65, 165, 50};
 Rectangle guiControls = {1730, 125, 165, 50};
 Rectangle guiBack = {1785, 35, 100, 50};

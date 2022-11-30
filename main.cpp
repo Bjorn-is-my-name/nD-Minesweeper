@@ -32,7 +32,7 @@ int newMines = 1;
 bool inSettings = false;
 bool inControls = false;
 
-DoublyLinkedList colorFilter;
+DoublyLinkedList<int> colorFilter;
 
 main(void)
 {
@@ -544,9 +544,9 @@ void drawControls()
         "-    Next dimension size\n"
         "\n"
         "-    Toggle Moving mode\n"
-        "-    Hold and drag to move the board (overrides drawing mode)\n"
+        "-    Hold and drag to move the board (overrides labeling mode)\n"
         "\n"
-        "-    Toggle Drawing mode\n"
+        "-    Toggle Labeling mode\n"
         "-    Label the cell with the selected color\n"
         "-    Remove the label with the selected color from the cell\n"
         "-    Switch to the color above the selected color\n"
@@ -791,8 +791,8 @@ void drawGui()
         movingMode = !movingMode;
 
     // Drawing mode
-    GuiLabel(guiDrawingLabel, "Draw");
-    if (GuiButton(guiDrawing, drawingMode ? "On" : "Off"))
+    GuiLabel(guiLabelingLabel, "Label");
+    if (GuiButton(guiLabeling, drawingMode ? "On" : "Off"))
         drawingMode = !drawingMode;
 
     // Color options
@@ -1090,7 +1090,7 @@ void generateMines(int cellIndex)
     // Generate all the mines
 
     // Keep track of the free spots
-    DoublyLinkedList freeSpots;
+    DoublyLinkedList<int> freeSpots;
     for (int i = 0; i < totalCells; i++)
         freeSpots.add(i);
 
