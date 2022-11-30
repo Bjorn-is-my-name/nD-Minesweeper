@@ -4,7 +4,7 @@
 #include <main.h>
 #include <string>
 #include <math.h>
-
+h;
 int dimension;
 int *dimensionSizes; // width, length, height etc...
 int totalCells;
