@@ -321,8 +321,13 @@ void unlabelCell()
 
     // If the cell has the color label, remove it
     for (int i = cell->labels.len() - 1; i >= 0; i--)
+    {
         if (cell->labels.get(i) == selectedColor)
+        {
             cell->labels.remove(i);
+            return;
+        }
+    }
 }
 
 void draw()

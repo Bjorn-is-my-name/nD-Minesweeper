@@ -90,7 +90,7 @@ public:
     }
 
     // Get a node its value
-    T get(int index)
+    T &get(int index)
     {
         node<T> *n = head;
 
