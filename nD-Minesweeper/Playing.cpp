@@ -4,6 +4,11 @@
 #include <cstdlib>
 #include <ctime>
 
+/**
+ * Starts the game
+ * 
+ * @param playSettings settings with which to play
+ */
 Playing::Playing(PlaySettings playSettings)
     : playSettings(playSettings)
 {
@@ -13,18 +18,21 @@ Playing::Playing(PlaySettings playSettings)
     if (!textFont.loadFromFile("arial.ttf"))
         Game::setState(nullptr);
 
+    // Create the bar that houses the controls
     controlsRect.setPosition(0, 0);
     controlsRect.setSize({ 1920, 90 });
     controlsRect.setFillColor(sf::Color::Black);
     controlsRect.setOutlineThickness(2);
     controlsRect.setOutlineColor(sf::Color::White);
 
+    // Moving mode control
     movingModeLbl = Label(20, 20, "MovingMode (M): ", textFont, 30);
     labels.push_back(&movingModeLbl);
     
     movingModeBtn = Button(movingModeLbl.getX() + movingModeLbl.getWidth() + 20, movingModeLbl.getY() - movingModeLbl.getHeight() / 2, 50, 50, movingMode ? "On" : "Off", textFont, 30);
     movingModeBtn.onClick = [&]()
     {
+        // Toggle moving mode 'On' or 'Off'
         movingMode = !movingMode;
         if (movingMode)
             lastMousePos = sf::Mouse::getPosition();
@@ -33,10 +41,12 @@ Playing::Playing(PlaySettings playSettings)
     };
     buttons.push_back(&movingModeBtn);
 
+    // Exit button to go back to pregame settings menu
     exitBtn = Button(1860, 20, 40, 40, "x", textFont, 30);
     exitBtn.onClick = [&]() { Game::setState(new SettingsMenu(this->playSettings)); };
     buttons.push_back(&exitBtn);
 
+    // Position of the board (visual)
     boardOffset = { 10, (int)(controlsRect.getSize().y + controlsRect.getOutlineThickness() + 10)};
 
     srand(time(0));
@@ -120,8 +130,8 @@ void Playing::createTile(std::vector<int>* counters)
     }
 
     // Create the tile and add it to the board
-    board.push_back(Tile(board.size(), x, y, xOffset, yOffset, playSettings.cellSize));
-    // Store the counters for this tile to be used in neighbor setting
+    board.push_back(Tile(board.size(), x, y, xOffset, yOffset, playSettings.tileSize));
+    // Store the counters for this tile to be used when 
     tempTileSizes.at(board.size() - 1) = std::vector<int>(*counters);
 }
 
@@ -235,13 +245,13 @@ void Playing::draw(sf::RenderWindow& window)
 {
     sf::Sprite flagSprite;
     flagSprite.setTexture(flagTexture);
-    flagSprite.setScale(playSettings.cellSize / flagSprite.getLocalBounds().width, playSettings.cellSize / flagSprite.getLocalBounds().height);
+    flagSprite.setScale(playSettings.tileSize / flagSprite.getLocalBounds().width, playSettings.tileSize / flagSprite.getLocalBounds().height);
 
     sf::Text valueText;
     valueText.setFont(textFont);
-    valueText.setCharacterSize(playSettings.cellSize);
+    valueText.setCharacterSize(playSettings.tileSize);
     valueText.setFillColor(sf::Color::Red);
-    valueText.setOrigin(-(playSettings.cellSize / 4.0f), playSettings.cellSize / 8.0f);
+    valueText.setOrigin(-(playSettings.tileSize / 4.0f), playSettings.tileSize / 8.0f);
 
     // Draw all tiles
     for (Tile& tile : board)
@@ -250,7 +260,7 @@ void Playing::draw(sf::RenderWindow& window)
         rect.move(boardOffset.x, boardOffset.y);
 
         sf::Vector2f rectPos = rect.getPosition();
-        if (rectPos.x + playSettings.cellSize < 0 || rectPos.x >= 1920 || rectPos.y + playSettings.cellSize < controlsRect.getSize().y || rectPos.y >= 1080)
+        if (rectPos.x + playSettings.tileSize < 0 || rectPos.x >= 1920 || rectPos.y + playSettings.tileSize < controlsRect.getSize().y || rectPos.y >= 1080)
             continue;
 
         window.draw(rect);
@@ -288,7 +298,7 @@ void Playing::drawNeighbors(sf::RenderWindow& window)
     for (Tile& tile : board)
     {
         sf::Vector2f rectPos = tile.getDrawingRect().getPosition();
-        if (rectPos.x + boardOffset.x + playSettings.cellSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.cellSize < 0 || rectPos.y + boardOffset.y >= 1080)
+        if (rectPos.x + boardOffset.x + playSettings.tileSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.tileSize < 0 || rectPos.y + boardOffset.y >= 1080)
             continue;
 
         if (tile.pointOnRect(mousePos.x, mousePos.y))
@@ -302,7 +312,7 @@ void Playing::drawNeighbors(sf::RenderWindow& window)
             for (Tile* neighbor : tile.getNeighbors())
             {
                 sf::Vector2f rectPos = neighbor->getDrawingRect().getPosition();
-                if (rectPos.x + boardOffset.x + playSettings.cellSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.cellSize < 0 || rectPos.y + boardOffset.y >= 1080)
+                if (rectPos.x + boardOffset.x + playSettings.tileSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.tileSize < 0 || rectPos.y + boardOffset.y >= 1080)
                     continue;
 
                 rect.setPosition(rectPos);

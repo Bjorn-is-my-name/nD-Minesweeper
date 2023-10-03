@@ -1,19 +1,33 @@
 #include "Tile.h"
 
-Tile::Tile(int index, int x, int y, int xOffset, int yOffset, int cellSize)
+/**
+ * Creates the tile
+ * 
+ * @param index the index of the tile
+ * @param x, y position of the tile
+ * @param xOffset, yOffset visual offset for the tile
+ * @param tileSize size of the tile
+ */
+Tile::Tile(int index, int x, int y, int xOffset, int yOffset, int tileSize)
 {
 	this->index = index;
 	this->x = x;
 	this->y = y;
 	this->value = 0;
 
-	drawingRect.setPosition((x + xOffset) * cellSize, (y + yOffset) * cellSize);
-	drawingRect.setSize(sf::Vector2f(cellSize, cellSize));
+	drawingRect.setPosition((x + xOffset) * tileSize, (y + yOffset) * tileSize);
+	drawingRect.setSize(sf::Vector2f(tileSize, tileSize));
 	drawingRect.setFillColor(sf::Color(128, 128, 128));
 	drawingRect.setOutlineThickness(-2);
 	drawingRect.setOutlineColor(sf::Color::Black);
 }
-#include <iostream>
+
+/**
+ * Checks for collision with the tile
+ * 
+ * @param x, y position to check for collision
+ * @return collision 'true' or 'false'
+ */
 bool Tile::pointOnRect(int x, int y)
 {
 	sf::Vector2f pos = drawingRect.getPosition();

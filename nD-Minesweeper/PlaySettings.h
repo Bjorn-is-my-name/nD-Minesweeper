@@ -2,16 +2,17 @@
 
 #include <vector>
 
+// Settings for the game
 class PlaySettings
 {
 private:
-	int dimensions;
-	std::vector<int> dimensionSizes;
-	std::vector<int> extraSpacePerDimension;
-	int bombs;
+	int dimensions;								// Dimension to play in
+	std::vector<int> dimensionSizes;			// Sizes of each dimension
+	std::vector<int> extraSpacePerDimension;	// Space between each dimension (visual)
+	int bombs;									// Number of bombs
 
 public:
-	int cellSize;
+	int tileSize;								// Size of the tiles
 
 	PlaySettings();
 	int getDimensions() const;

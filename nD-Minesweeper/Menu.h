@@ -10,9 +10,10 @@ class Menu : public GameState
 private:
 	sf::Font textFont;
 	Label menutextLbl;
-	Button playBtn;
-	Button exitBtn;
-	std::vector<Button*> buttons;
+
+	Button playBtn;					// Button to go to pregame menu
+	Button exitBtn;					// Button to exit the game
+	std::vector<Button*> buttons;	// Vector for all the buttons on the main menu
 
 public:
 	Menu();

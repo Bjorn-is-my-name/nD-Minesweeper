@@ -2,6 +2,11 @@
 #include "Menu.h"
 #include "Playing.h"
 
+/**
+ * Initializes the pregame settings page
+ * 
+ * @param settings previous settings if returning from game, else default settings
+ */
 SettingsMenu::SettingsMenu(const PlaySettings settings)
 {
     // Load files, exit game if unsuccesfull
@@ -14,7 +19,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     menutextLbl = Label(766, 200, "Game Settings", textFont, 60);
     labels.push_back(&menutextLbl);
 
-    // Dimensions input
+    // Dimensions setting
     dimLbl = Label(600, 408, "Dimensions:", textFont, 30);
     labels.push_back(&dimLbl);
 
@@ -23,6 +28,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     dimVB = ValueBox(dimLbl.getX() + dimLbl.getWidth() + 20, dimLbl.getY() - dimLbl.getHeight() / 2, 50, 50, playSettings.getDimensions(), 1, 99, textFont, 30);
     dimVB.onDeselect = [&]() {
+        // Update the value, if value is below min, set value to min
         int value = dimVB.getValue();
         int min = dimVB.getMin();
         
@@ -34,11 +40,12 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
         else
             playSettings.setDimensions(value);
 
+        // Update max number of bombs allowed in game
         bombsVB.setMax(playSettings.getMax());
     };
     valueBoxes.push_back(&dimVB);
 
-    // Dimension sizes input
+    // Dimension sizes setting
     dimSizeLbl = Label(600, 609, "Size:", textFont, 30);
     labels.push_back(&dimSizeLbl);
 
@@ -50,6 +57,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     dimSizeVB = ValueBox(dimSizeLbl.getX() + dimSizeLbl.getWidth() + 50, dimSizeLbl.getY() - dimSizeLbl.getHeight() / 2, 50, 50, playSettings.getDimensionSize(selectedDimSize), 1, 99, textFont, 30);
     dimSizeVB.onDeselect = [&]() {
+        // Update the value, if value is below min, set value to min
         int value = dimSizeVB.getValue();
         int min = dimSizeVB.getMin();
 
@@ -61,12 +69,14 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
         else
             playSettings.setDimensionSize(selectedDimSize, value);
         
+        // Update the max number of bombs allowed in game
         bombsVB.setMax(playSettings.getMax());
     };
     valueBoxes.push_back(&dimSizeVB);
 
     dimSizeLeftBtn = Button(dimSizeVB.getX() - 30, dimSizeVB.getY(), 20, 50, "<", textFont, 30);
     dimSizeLeftBtn.onClick = [&]() {
+        // Go to dimension size setting of a lower dimension (if not lowest)
         if (selectedDimSize > 0)
         {
             selectedDimSize--;
@@ -78,6 +88,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     dimSizeRightBtn = Button(dimSizeVB.getX() + dimSizeVB.getWidth() + 10, dimSizeVB.getY(), 20, 50, ">", textFont, 30);
     dimSizeRightBtn.onClick = [&]() {
+        // Go to dimension size setting of a higher dimension (if not highest)
         if (selectedDimSize < playSettings.getDimensions() - 1)
         {
             selectedDimSize++;
@@ -87,7 +98,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     };
     buttons.push_back(&dimSizeRightBtn);
 
-    // Bombs input
+    // Bombs setting
     bombsLbl = Label(1000, 408, "Bombs:", textFont, 30);
     labels.push_back(&bombsLbl);
 
@@ -96,6 +107,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     bombsVB = ValueBox(bombsLbl.getX() + bombsLbl.getWidth() + 20, bombsLbl.getY() - bombsLbl.getHeight() / 2, 50, 50, playSettings.getBombs(), 0, playSettings.getMax(), textFont, 30);
     bombsVB.onDeselect = [&]() {
+        // Update the value, if value is below min, set value to min
         int value = bombsVB.getValue();
         int min = bombsVB.getMin();
 
@@ -109,7 +121,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     };
     valueBoxes.push_back(&bombsVB);
 
-    // Extra space input
+    // Extra space setting
     extraSpaceLbl = Label(1000, 609, "Space:", textFont, 30);
     labels.push_back(&extraSpaceLbl);
 
@@ -121,6 +133,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     extraSpaceVB = ValueBox(extraSpaceLbl.getX() + extraSpaceLbl.getWidth() + 50, extraSpaceLbl.getY() - extraSpaceLbl.getHeight() / 2, 50, 50, playSettings.getExtraSpace(selectedExtraSpace), 0, 99, textFont, 30);
     extraSpaceVB.onDeselect = [&]() {
+        // Update the value, if value is below min, set value to min
         int value = extraSpaceVB.getValue();
         int min = extraSpaceVB.getMin();
         
@@ -136,6 +149,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     extraSpaceLeftBtn = Button(extraSpaceVB.getX() - 30, extraSpaceVB.getY(), 20, 50, "<", textFont, 30);
     extraSpaceLeftBtn.onClick = [&]() {
+        // Go to extra space setting of a lower dimension (if not lowest)
         if (selectedExtraSpace > 0)
         {
             selectedExtraSpace--;
@@ -147,6 +161,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     extraSpaceRightBtn = Button(extraSpaceVB.getX() + extraSpaceVB.getWidth() + 10, extraSpaceVB.getY(), 20, 50, ">", textFont, 30);
     extraSpaceRightBtn.onClick = [&]() {
+        // Go to extra space setting of a higer dimension (if not higest)
         if (selectedExtraSpace < playSettings.getDimensions() - 1)
         {
             selectedExtraSpace++;
@@ -156,17 +171,22 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     };
     buttons.push_back(&extraSpaceRightBtn);
 
-    // Play button
+    // Play button, loads the game
     playBtn = Button(860, 780, 200, 80, "Play", textFont, 40);
     playBtn.onClick = [&]() { Game::setState(new Playing(playSettings)); };
     buttons.push_back(&playBtn);
 
-    // Exit button
+    // Exit button, back to main menu
     exitBtn = Button(1860, 20, 40, 40, "x", textFont, 30);
     exitBtn.onClick = []() { Game::setState(new Menu()); };
     buttons.push_back(&exitBtn);
 }
 
+/**
+ * Updates the pregame settings menu
+ * 
+ * Shows tooltip when hovered over
+ */
 void SettingsMenu::update()
 {
     sf::Vector2i mousePos = sf::Mouse::getPosition();
@@ -180,8 +200,15 @@ void SettingsMenu::update()
     }
 }
 
+/**
+ * Draws everything on the page
+ * 
+ * @param window the window on which to draw the compontents
+ */
 void SettingsMenu::draw(sf::RenderWindow& window)
 {
+    window.clear(sf::Color::Black);
+
     for (auto& label : labels)
         label->draw(window);
 
@@ -195,16 +222,24 @@ void SettingsMenu::draw(sf::RenderWindow& window)
         tooltip->draw(window);
 }
 
+/**
+ * Handles key presses
+ * 
+ * @param key key that is pressed
+ */
 void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
 {
     switch (key)
     {
+    // On 'Enter' load the game
     case sf::Keyboard::Enter:
         Game::setState(new Playing(playSettings));
         break;
+    // On 'Escape' go back to main menu
     case sf::Keyboard::Escape:
         Game::setState(new Menu());
         break;
+    // On 'Backspace' remove a digit in the currently selected valuebox
     case sf::Keyboard::BackSpace:
         for (auto& valueBox : valueBoxes)
         {
@@ -215,6 +250,7 @@ void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
             }
         }
         break;
+    // On any other key, check if a digit has to be added to the currently selected valuebox
     default:
         for (auto& valueBox : valueBoxes)
         {
@@ -228,13 +264,24 @@ void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
     }
 }
 
+/**
+ * Handles mouse presses
+ * 
+ * @param event mouse event which has pressed mousebutton and mouse position
+ */
 void SettingsMenu::mousePressed(const sf::Event::MouseButtonEvent event)
 {
 
 }
 
+/**
+ * Handles mouse releases
+ *
+ * @param event mouse event which has released mousebutton and mouse position
+ */
 void SettingsMenu::mouseReleased(const sf::Event::MouseButtonEvent event)
 {
+    // Check if a valuebox is selected, deselect all other valueboxes
     for (auto& valueBox : valueBoxes)
     {
         if (valueBox->pointOnRect(event.x, event.y) && !valueBox->selected)
@@ -243,6 +290,7 @@ void SettingsMenu::mouseReleased(const sf::Event::MouseButtonEvent event)
             valueBox->deselect();
     }
 
+    // Check if a button is pressed
     for (auto& button : buttons)
     {
         if (button->pointOnRect(event.x, event.y))

@@ -6,19 +6,19 @@
 class Tile
 {
 private:
-	int index;
-	sf::RectangleShape drawingRect;
-	int x;
-	int y;
-	std::vector<Tile*> neighbors;
-	int value;
-	bool bomb = false;
-	bool visible = false;
-	bool flagged = false;
+	int index;								// Index of the tile, used for identification
+	sf::RectangleShape drawingRect;			// Rectangle to draw
+	int x;									// X position of the tile
+	int y;									// Y position of the tile
+	std::vector<Tile*> neighbors;			// List of neighboring tiles
+	int value;								// Value of the tile
+	bool bomb = false;						// Bool if the tile is a bomb
+	bool visible = false;					// Bool if the tile is revealed
+	bool flagged = false;					// Bool if the tile is flagged
 
 public:
 	Tile(int, int, int, int, int, int);
-	bool pointOnRect(int, int);
+	bool pointOnRect(int, int);				// Function which checks for collision with the tile
 
 	#pragma region Getters
 	int getIndex();
