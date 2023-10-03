@@ -1,0 +1,2 @@
+# nD-Minesweeper
+ Multidimensional minesweeper
