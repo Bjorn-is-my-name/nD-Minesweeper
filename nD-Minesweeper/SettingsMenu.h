@@ -5,6 +5,7 @@
 #include "ValueBox.h"
 #include "Button.h"
 #include "Label.h"
+#include "Tooltip.h"
 #include <vector>
 
 class SettingsMenu : public GameState
@@ -35,6 +36,12 @@ private:
 	Button playBtn;
 	Button exitBtn;
 	std::vector<Button*> buttons;
+
+	ToolTip dimTt;
+	ToolTip dimSizeTt;
+	ToolTip bombsTt;
+	ToolTip extraSpaceTt;
+	std::vector<ToolTip*> tooltips;
 	
 	int selectedDimSize;
 	int selectedExtraSpace;

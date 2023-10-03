@@ -18,6 +18,9 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     dimLbl = Label(600, 408, "Dimensions:", textFont, 30);
     labels.push_back(&dimLbl);
 
+    dimTt = ToolTip(dimLbl.getX() - 40, dimLbl.getY() + dimLbl.getHeight() / 2 - 10, 20, 20, "Dimension to play in.", textFont, 18);
+    tooltips.push_back(&dimTt);
+
     dimVB = ValueBox(dimLbl.getX() + dimLbl.getWidth() + 20, dimLbl.getY() - dimLbl.getHeight() / 2, 50, 50, playSettings.getDimensions(), 1, 99, textFont, 30);
     dimVB.onDeselect = [&]() {
         int value = dimVB.getValue();
@@ -41,6 +44,9 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     dimSizeIdxLbl = Label(dimSizeLbl.getX() + dimSizeLbl.getWidth() + 62, dimSizeLbl.getY() - dimSizeLbl.getHeight() / 2 - 30, "(1)", textFont, 18);
     labels.push_back(&dimSizeIdxLbl);
+
+    dimSizeTt = ToolTip(dimSizeLbl.getX() - 40, dimSizeLbl.getY() + dimSizeLbl.getHeight() / 2 - 10, 20, 20, "Size for the selected dimension.", textFont, 18);
+    tooltips.push_back(&dimSizeTt);
 
     dimSizeVB = ValueBox(dimSizeLbl.getX() + dimSizeLbl.getWidth() + 50, dimSizeLbl.getY() - dimSizeLbl.getHeight() / 2, 50, 50, playSettings.getDimensionSize(selectedDimSize), 1, 99, textFont, 30);
     dimSizeVB.onDeselect = [&]() {
@@ -85,6 +91,9 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     bombsLbl = Label(1000, 408, "Bombs:", textFont, 30);
     labels.push_back(&bombsLbl);
 
+    bombsTt = ToolTip(bombsLbl.getX() - 40, bombsLbl.getY() + bombsLbl.getHeight() / 2 - 10, 20, 20, "Amount of bombs.", textFont, 18);
+    tooltips.push_back(&bombsTt);
+
     bombsVB = ValueBox(bombsLbl.getX() + bombsLbl.getWidth() + 20, bombsLbl.getY() - bombsLbl.getHeight() / 2, 50, 50, playSettings.getBombs(), 0, playSettings.getMax(), textFont, 30);
     bombsVB.onDeselect = [&]() {
         int value = bombsVB.getValue();
@@ -101,11 +110,14 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     valueBoxes.push_back(&bombsVB);
 
     // Extra space input
-    extraSpaceLbl = Label(1000, 609, "Size:", textFont, 30);
+    extraSpaceLbl = Label(1000, 609, "Space:", textFont, 30);
     labels.push_back(&extraSpaceLbl);
 
     extraSpaceIdxLbl = Label(extraSpaceLbl.getX() + extraSpaceLbl.getWidth() + 62, extraSpaceLbl.getY() - extraSpaceLbl.getHeight() / 2 - 30, "(1)", textFont, 18);
     labels.push_back(&extraSpaceIdxLbl);
+
+    extraSpaceTt = ToolTip(extraSpaceLbl.getX() - 40, extraSpaceLbl.getY() + extraSpaceLbl.getHeight() / 2 - 10, 20, 20, "Space (in cells) between each dimension.", textFont, 18);
+    tooltips.push_back(&extraSpaceTt);
 
     extraSpaceVB = ValueBox(extraSpaceLbl.getX() + extraSpaceLbl.getWidth() + 50, extraSpaceLbl.getY() - extraSpaceLbl.getHeight() / 2, 50, 50, playSettings.getExtraSpace(selectedExtraSpace), 0, 99, textFont, 30);
     extraSpaceVB.onDeselect = [&]() {
@@ -157,7 +169,15 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
 void SettingsMenu::update()
 {
-
+    sf::Vector2i mousePos = sf::Mouse::getPosition();
+    
+    for (auto& tooltip : tooltips)
+    {
+        if (tooltip->pointOnRect(mousePos.x, mousePos.y))
+            tooltip->show();
+        else
+            tooltip->hide();
+    }
 }
 
 void SettingsMenu::draw(sf::RenderWindow& window)
@@ -170,6 +190,9 @@ void SettingsMenu::draw(sf::RenderWindow& window)
 
     for (auto& button : buttons)
         button->draw(window);
+
+    for (auto& tooltip : tooltips)
+        tooltip->draw(window);
 }
 
 void SettingsMenu::keyPressed(const sf::Keyboard::Key key)

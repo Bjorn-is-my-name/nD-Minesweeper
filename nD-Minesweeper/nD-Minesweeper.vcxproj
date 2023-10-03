@@ -139,6 +139,7 @@
     <ClCompile Include="Playing.cpp" />
     <ClCompile Include="PlaySettings.cpp" />
     <ClCompile Include="Tile.cpp" />
+    <ClCompile Include="Tooltip.cpp" />
     <ClCompile Include="UIElementBase.cpp" />
     <ClCompile Include="ValueBox.cpp" />
   </ItemGroup>
@@ -152,6 +153,7 @@
     <ClInclude Include="SettingsMenu.h" />
     <ClInclude Include="PlaySettings.h" />
     <ClInclude Include="Tile.h" />
+    <ClInclude Include="Tooltip.h" />
     <ClInclude Include="UIElementBase.h" />
     <ClInclude Include="ValueBox.h" />
   </ItemGroup>
