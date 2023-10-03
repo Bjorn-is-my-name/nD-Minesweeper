@@ -128,7 +128,7 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
     extraSpaceIdxLbl = Label(extraSpaceLbl.getX() + extraSpaceLbl.getWidth() + 62, extraSpaceLbl.getY() - extraSpaceLbl.getHeight() / 2 - 30, "(1)", textFont, 18);
     labels.push_back(&extraSpaceIdxLbl);
 
-    extraSpaceTt = ToolTip(extraSpaceLbl.getX() - 40, extraSpaceLbl.getY() + extraSpaceLbl.getHeight() / 2 - 10, 20, 20, "Space (in cells) between each dimension.", textFont, 18);
+    extraSpaceTt = ToolTip(extraSpaceLbl.getX() - 40, extraSpaceLbl.getY() + extraSpaceLbl.getHeight() / 2 - 10, 20, 20, "Space (in tiles) between each dimension.", textFont, 18);
     tooltips.push_back(&extraSpaceTt);
 
     extraSpaceVB = ValueBox(extraSpaceLbl.getX() + extraSpaceLbl.getWidth() + 50, extraSpaceLbl.getY() - extraSpaceLbl.getHeight() / 2, 50, 50, playSettings.getExtraSpace(selectedExtraSpace), 0, 99, textFont, 30);
