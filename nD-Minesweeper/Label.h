@@ -2,6 +2,7 @@
 
 #include "UIElementBase.h"
 
+// Label class for creating labels
 class Label : public UIElementBase
 {
 public:

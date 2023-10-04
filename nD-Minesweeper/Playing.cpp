@@ -53,9 +53,9 @@ Playing::Playing(PlaySettings playSettings)
 
     int dimensions = playSettings.getDimensions();
 
-    // Pre-allocate the memory for the vectors
+    // Pre-allocate the memory off the vectors
     board.reserve(getMax(dimensions));
-    tempTileSizes.resize(getMax(dimensions), std::vector<int>(dimensions));
+    tempTileCounters.resize(getMax(dimensions), std::vector<int>(dimensions));
     dimensionOffsets.resize(dimensions, 0);
 
     setOffsets();
@@ -70,7 +70,12 @@ Playing::Playing(PlaySettings playSettings)
     }
 }
 
-// Generate all the tiles on the board
+/**
+ * Generate all the tiles on the board
+ * 
+ * @param dimension dimension to generate tiles in
+ * @param counters dimension counters to keep track of positioning
+ */
 void Playing::generateBoard(int dimension, std::vector<int>* counters)
 {
     // Keep going in to a lower dimension, if at first dimension, create the tile
@@ -79,7 +84,7 @@ void Playing::generateBoard(int dimension, std::vector<int>* counters)
         if (dimension > 0)
         {
             generateBoard(dimension - 1, counters);
-            // Reset the counter if generating the next(higher) dimension started
+            // Reset the counter if generating the next (higher) dimension started
             counters->at(dimension - 1) = 0;
         }
         else
@@ -90,7 +95,11 @@ void Playing::generateBoard(int dimension, std::vector<int>* counters)
     }
 }
 
-// Create the tile based of the counters
+/**
+ * Create the tile based of the counters
+ * 
+ * @param counters the number times each dimension is passed, used for calculating tile position
+ */
 void Playing::createTile(std::vector<int>* counters)
 {
     // Startposition is the position in first and second dimension
@@ -131,27 +140,31 @@ void Playing::createTile(std::vector<int>* counters)
 
     // Create the tile and add it to the board
     board.push_back(Tile(board.size(), x, y, xOffset, yOffset, playSettings.tileSize));
-    // Store the counters for this tile to be used when 
-    tempTileSizes.at(board.size() - 1) = std::vector<int>(*counters);
+    // Store the counters for this tile for finding its neighbors
+    tempTileCounters.at(board.size() - 1) = std::vector<int>(*counters);
 }
 
-// Set all the neighbors of a tile
+/**
+ * Set all the neighbors of a tile
+ * 
+ * @param tile[in, out] the tile which its neighbors have to be set
+ * @param dimension[in] the dimension to search in for neighbors
+ */
 void Playing::setNeighbors(Tile& tile, int dimension)
 {
-    // Go from lowest dimension to highest
+    // Go from lowest dimension to highest (recursively)
     if (dimension < playSettings.getDimensions())
     {
-        // For every neighbor found, check for their neighbor in the same dimension
+        // For every neighbor found, check for their neighbors in the same dimension
         for (Tile *neighbor : tile.getNeighbors())
         {
-            // Get the max number of tiles in current dimension
             int maxTiles = getMax(dimension);
             // Get the left or up neighbor its index by subtracting the number of tiles
             if (neighbor->getIndex() - maxTiles >= 0)
             {
                 Tile* extraNeighbor = &board.at(neighbor->getIndex() - maxTiles);
                 // If the neighbor is allowed, add it
-                if (neighborAllowed(tempTileSizes.at(tile.getIndex()), tempTileSizes.at(extraNeighbor->getIndex())))
+                if (neighborAllowed(tempTileCounters.at(tile.getIndex()), tempTileCounters.at(extraNeighbor->getIndex())))
                     tile.addNeighbor(extraNeighbor);
             }
             // Get the right or down neighbor its index by adding the number of tiles
@@ -159,7 +172,7 @@ void Playing::setNeighbors(Tile& tile, int dimension)
             {
                 Tile* extraNeighbor = &board.at(neighbor->getIndex() + maxTiles);
                 // If the neighbor is allowed, add it
-                if (neighborAllowed(tempTileSizes.at(tile.getIndex()), tempTileSizes.at(extraNeighbor->getIndex())))
+                if (neighborAllowed(tempTileCounters.at(tile.getIndex()), tempTileCounters.at(extraNeighbor->getIndex())))
                     tile.addNeighbor(extraNeighbor);
             }
         }
@@ -168,27 +181,46 @@ void Playing::setNeighbors(Tile& tile, int dimension)
     }
 }
 
-// Check if a neighbor is allowed by checking the difference in position (done by subtracting the counters)
-bool Playing::neighborAllowed(std::vector<int> cellSizes, std::vector<int> neighborSizes)
+/**
+ * Check if a neighbor is allowed
+ *
+ * A neighbor is allowed if the difference in position (done by subtracting the counters) is at most 1 away
+ * 
+ * @param tileCounters, the counters that indicate the tile its position
+ * @param neighborCounters, the counters that indicate the neighbor its position
+ * @return bool 'true' or 'false' which indicates if a neighbor is allowed
+ */
+bool Playing::neighborAllowed(std::vector<int> tileCounters, std::vector<int> neighborCounters)
 {
     // The neighbors are cut off at the sides of the first and second dimension, the neighbors that have to be cut off are more then 1 (row, colum, matrix, etc..) away
-    for (int i = 0; i < cellSizes.size(); i++)
+    for (int i = 0; i < tileCounters.size(); i++)
     {
-        int difference = cellSizes.at(i) - neighborSizes.at(i);
+        int difference = tileCounters.at(i) - neighborCounters.at(i);
         if (difference > 1 || difference < -1)
             return false;
     }
     return true;
 }
 
-// Set the drawing offsets for each dimension
+/**
+ * Set the drawing offsets for each dimension
+ */
 void Playing::setOffsets()
 {
     for (int i = 0; i < playSettings.getDimensions(); i++)
         dimensionOffsets.at(i) = playSettings.getExtraSpace(i) + calculateOffset(i, true);
 }
 
-// Calculate the offset by adding the offsets of already passed dimensions
+/**
+ * Calculate the offset by adding the offsets of already passed dimensions
+ * 
+ * The function is called recursively to add up offsets of passed dimensions to get offset for current dimension
+ * the bool 'firstCall' is necessary because the start of a dimension its pattern is slightly different from main pattern
+ * 
+ * @param dimension the dimension to calculate the offset for
+ * @param firstCall indicates if this is the first call to the function for creating a dimension specific pattern
+ * @return 'total' the total offset
+ */
 int Playing::calculateOffset(int dimension, bool firstCall)
 {
     int total = 0;
@@ -209,16 +241,29 @@ int Playing::calculateOffset(int dimension, bool firstCall)
     return total;
 }
 
-// Get the maximum number of tiles in dimension
+/**
+ * Get the maximum number of tiles in the given dimension
+ * 
+ * @param dimension the dimension for which to calculate the number of tiles
+ * @return 'total' the total number of tiles
+ */
 int Playing::getMax(int dimension)
 {
+    // Multiply all the dimension their sizes up to the input dimension
     int total = 1;
     for (int i = 0; i < dimension; i++)
         total *= playSettings.getDimensionSize(i);
     return total;
 }
 
-// Get the maximum number of tiles in dimension (only counting specific dimensions)
+/**
+ * Get the maximum number of tiles in dimension with extended paramters
+ * 
+ * @param dimension the dimension for which to calculate the number of tiles (stop)
+ * @param start the starting dimension                                       (start)
+ * @param increment how many dimensions to go higher                         (step)
+ * @return 'total' the total number of tiles
+ */
 int Playing::getMaxExtended(int dimension, int start, int increment)
 {
     int total = 1;
@@ -227,7 +272,9 @@ int Playing::getMaxExtended(int dimension, int start, int increment)
     return total;
 }
 
-// Update the game
+/**
+ * Update the game
+ */
 void Playing::update()
 {
     sf::Vector2i currentMousePos = sf::Mouse::getPosition();
@@ -236,17 +283,24 @@ void Playing::update()
     if (movingMode && sf::Mouse::isButtonPressed(sf::Mouse::Right))
         boardOffset -= lastMousePos - currentMousePos;
 
-    // Update the last mouse position (position on previous frame)
     lastMousePos = currentMousePos;
 }
 
-// Draw everything on the screen
+/**
+ * Draw everything on the screen
+ * 
+ * @param window the window to draw on
+ */
 void Playing::draw(sf::RenderWindow& window)
 {
+    window.clear(sf::Color::Black);
+
+    // Create a sprite of the flag texture
     sf::Sprite flagSprite;
     flagSprite.setTexture(flagTexture);
     flagSprite.setScale(playSettings.tileSize / flagSprite.getLocalBounds().width, playSettings.tileSize / flagSprite.getLocalBounds().height);
 
+    // Create a text object for drawing the number of nearby bombs
     sf::Text valueText;
     valueText.setFont(textFont);
     valueText.setCharacterSize(playSettings.tileSize);
@@ -259,6 +313,7 @@ void Playing::draw(sf::RenderWindow& window)
         sf::RectangleShape rect = tile.getDrawingRect();
         rect.move(boardOffset.x, boardOffset.y);
 
+        // If the tile is outside the bounds, skip it
         sf::Vector2f rectPos = rect.getPosition();
         if (rectPos.x + playSettings.tileSize < 0 || rectPos.x >= 1920 || rectPos.y + playSettings.tileSize < controlsRect.getSize().y || rectPos.y >= 1080)
             continue;
@@ -281,6 +336,7 @@ void Playing::draw(sf::RenderWindow& window)
 
     drawNeighbors(window);
 
+    // Draw the controls bar and its controls
     window.draw(controlsRect);
 
     for (auto& label : labels)
@@ -290,27 +346,38 @@ void Playing::draw(sf::RenderWindow& window)
         button->draw(window);
 }
 
+/**
+ * Highlights the neighbors of the cell being hovered over
+ * 
+ * @param window the window to draw on
+ */
 void Playing::drawNeighbors(sf::RenderWindow& window)
 {
     sf::Vector2i mousePos = sf::Mouse::getPosition();
     mousePos -= boardOffset;
 
+    // Check all tiles for collision with mouse position
     for (Tile& tile : board)
     {
+        // Skip all the tiles which are outside the drawing bounds
         sf::Vector2f rectPos = tile.getDrawingRect().getPosition();
-        if (rectPos.x + boardOffset.x + playSettings.tileSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.tileSize < 0 || rectPos.y + boardOffset.y >= 1080)
+        if (rectPos.x + boardOffset.x + playSettings.tileSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.tileSize < controlsRect.getSize().y || rectPos.y + boardOffset.y >= 1080)
             continue;
 
+        // Do the collision check
         if (tile.pointOnRect(mousePos.x, mousePos.y))
         {
+            // Highlight the hovered over tile
             sf::RectangleShape rect = tile.getDrawingRect();
             rect.move((float)boardOffset.x, (float)boardOffset.y);
             rect.setFillColor(sf::Color::Transparent);
             rect.setOutlineColor(sf::Color::Cyan);
             window.draw(rect);
 
+            // Get all the tile its neighbors and highlight them
             for (Tile* neighbor : tile.getNeighbors())
             {
+                // Skip neighbors which are outside the drawing bounds
                 sf::Vector2f rectPos = neighbor->getDrawingRect().getPosition();
                 if (rectPos.x + boardOffset.x + playSettings.tileSize < 0 || rectPos.x + boardOffset.x >= 1920 || rectPos.y + boardOffset.y + playSettings.tileSize < 0 || rectPos.y + boardOffset.y >= 1080)
                     continue;
@@ -319,18 +386,26 @@ void Playing::drawNeighbors(sf::RenderWindow& window)
                 rect.move((float)boardOffset.x, (float)boardOffset.y);
                 window.draw(rect);
             }
+
             return;
         }
     }
 }
 
+/**
+ * Handles key presses
+ *
+ * @param key key that is pressed
+ */
 void Playing::keyPressed(const sf::Keyboard::Key key)
 {
     switch (key)
     {
+    // On 'Escape' go back to the pregame settings menu
     case sf::Keyboard::Escape:
         Game::setState(new SettingsMenu(playSettings));
         break;
+    // On 'M' toggle moving mode on or off
     case sf::Keyboard::M:
         movingMode = !movingMode;
         if (movingMode)
@@ -343,13 +418,24 @@ void Playing::keyPressed(const sf::Keyboard::Key key)
     }
 }
 
+/**
+ * Handles mouse presses
+ *
+ * @param event mouse event which has pressed mousebutton and mouse position
+ */
 void Playing::mousePressed(const sf::Event::MouseButtonEvent event)
 {
     
 }
 
+/**
+ * Handles mouse releases
+ *
+ * @param event mouse event which has released mousebutton and mouse position
+ */
 void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
 {
+    // Check if a button is pressed
     for (auto& button : buttons)
     {
         if (button->pointOnRect(event.x, event.y))
@@ -361,29 +447,35 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
 
     switch (event.button)
     {
+    // On 'Mouse.Left' reveal the tile if not in moving mode
     case sf::Mouse::Left:
         if (movingMode)
             return;
 
+        // Find the tile being clicked
         for (Tile& tile : board)
         {
             if (tile.pointOnRect(event.x - boardOffset.x, event.y - boardOffset.y))
             {
+                // On first click, generate the bombs
                 if (!firstTileClicked)
                 {
                     generateBombs(tile);
                     firstTileClicked = true;
                 }
+                // Check if the tile is a bomb
                 else if (tile.isBomb())
                 {
                     lose();
                     return;
                 }
 
+                // Reveal the tile
                 tile.setVisible(true);
                 tile.setFlagged(false);
                 tile.setColor(sf::Color::White);
 
+                // Reveal the tile its neighbors if no bombs are around
                 if (tile.getValue() == 0)
                     for (Tile* neighbor : tile.getNeighbors())
                         revealTiles(*neighbor);
@@ -391,15 +483,19 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
             }
         }
         break;
+    // On 'Mouse.Right' flag or unflag the tile of not in moving mode
     case sf::Mouse::Right:
         if (movingMode)
             return;
 
+        // Find the tile being clicked
         for (Tile& tile : board)
         {
             if (tile.pointOnRect(event.x - boardOffset.x, event.y - boardOffset.y) && !tile.isVisible())
             {
+                // Change 'flagged' status to true or false based on old state
                 tile.setFlagged(!tile.isFlagged());
+                // If the tile is a bomb update the counter
                 if (tile.isBomb())
                 {
                     if (tile.isFlagged())
@@ -407,6 +503,7 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
                     else
                         bombsFlagged--;
 
+                    // If all the bombs are flagged, end the game
                     if (bombsFlagged == playSettings.getBombs())
                         win();
                 }
@@ -419,8 +516,14 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
     }
 }
 
+/**
+ * Reveal tiles and their neighbors
+ *
+ * @param tile the tile to reveal and reveal neighbors of
+ */
 void Playing::revealTiles(Tile& tile)
 {
+    // Only reveal hidden tiles
     if (tile.isVisible())
         return;
 
@@ -428,26 +531,35 @@ void Playing::revealTiles(Tile& tile)
     tile.setFlagged(false);
     tile.setColor(sf::Color::White);
 
+    // Reveal hidden neighbors if no bombs are around
     if (tile.getValue() == 0)
         for (Tile* neighbor : tile.getNeighbors())
             if (!neighbor->isVisible())
                 revealTiles(*neighbor);
 }
 
+/**
+ * Generates all the bombs on the board
+ *
+ * @param tile the tile that got revealed first where no bombs may be placed
+ */
 void Playing::generateBombs(Tile& tile)
 {
+    // If the number of bombs is equal to the number of tiles its an instant loss (all tiles are bombs)
     if (playSettings.getBombs() == playSettings.getMax())
     {
         lose();
         return;
     }
 
+    // All the possible tiles without the revealed tile
     std::vector<int> possibleIndexes(board.size());
 
     for (int i = 0; i < board.size(); i++)
         possibleIndexes.at(i) = i;
     possibleIndexes.erase(possibleIndexes.begin() + tile.getIndex());
 
+    // Choose tiles randomly to turn in to bombs
     for (int i = 0; i < playSettings.getBombs(); i++)
     {
         int index = rand() % possibleIndexes.size();
@@ -455,6 +567,7 @@ void Playing::generateBombs(Tile& tile)
         possibleIndexes.erase(possibleIndexes.begin() + index);
     }
 
+    // Set the values of the tiles that are not bombs
     for (Tile& tile : board)
     {
         int value = 0;
@@ -465,11 +578,21 @@ void Playing::generateBombs(Tile& tile)
     }
 }
 
+/**
+ * Executes when the game is won
+ * 
+ * Sends the player back to the pregame settings menu
+ */
 void Playing::win()
 {
     Game::setState(new SettingsMenu(playSettings));
 }
 
+/**
+ * Executes when the game is lost
+ * 
+ * Sends the player back to the pregame settings menu
+ */
 void Playing::lose()
 {
     Game::setState(new SettingsMenu(playSettings));

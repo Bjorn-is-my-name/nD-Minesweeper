@@ -1,16 +1,30 @@
 #include "UIElementBase.h"
 
+/**
+ * Initializes the UI element
+ */
 UIElementBase::UIElementBase()
 {
 
 }
 
+/**
+ * Draws the UI element
+ * 
+ * @param window the window to draw on
+ */
 void UIElementBase::draw(sf::RenderWindow& window)
 {
 	window.draw(rect);
 	window.draw(text);
 }
 
+/**
+ * Checks if the point collides with the rectangle
+ * 
+ * @param x2, y2 position to check for collision
+ * @return bool 'true' if collision is detected else 'false'
+ */
 bool UIElementBase::pointOnRect(const float x2, const float y2) const
 {
 	const float x = getX();

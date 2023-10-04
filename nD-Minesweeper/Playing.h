@@ -12,7 +12,7 @@ class Playing : public GameState
 private:
 	std::vector<Tile> board;						// Board to store all the tiles
 	sf::Vector2i boardOffset;						// X and Y offset for drawing the tiles
-	std::vector<std::vector<int>> tempTileSizes;	// Holds counters of cells for calculating neighbors - counter: stores how many times a dimension is passed, indicates tile position
+	std::vector<std::vector<int>> tempTileCounters;	// Holds counters of cells for calculating neighbors - counter: stores how many times a dimension is passed, indicates tile position
 	PlaySettings playSettings;						// Settings with which the game is played
 	std::vector<int> dimensionOffsets;				// Stores the position offset for the tiles
 	sf::Vector2i lastMousePos;						// Mouse position in previous frame
@@ -42,7 +42,7 @@ private:
 	void generateBombs(Tile& tile);														// Generates all the bombs
 	void revealTiles(Tile& tile);														// Reveals the clicked tile (and its neighbors if no mines are around)
 	void setNeighbors(Tile& tile, int dimension);										// Sets the neighbors for each tile
-	bool neighborAllowed(std::vector<int> cellSizes, std::vector<int> neighborSizes);	// Checks if a neighbor is within dimension bounds
+	bool neighborAllowed(std::vector<int> tileSizes, std::vector<int> neighborSizes);	// Checks if a neighbor is within dimension bounds
 	void win();																			// Triggers when the game is won
 	void lose();																		// Triggers when the game is lost
 

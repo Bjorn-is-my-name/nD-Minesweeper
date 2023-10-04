@@ -93,7 +93,6 @@ void Game::draw()
     if (!state)
         return;
 
-    window.clear(sf::Color::Black);
     state->draw(window);
     window.display();
 }

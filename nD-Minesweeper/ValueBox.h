@@ -3,18 +3,19 @@
 #include "UIElementBase.h"
 #include <functional>
 
+// Valuebox for inputting numbers
 class ValueBox : public UIElementBase
 {
 private:
-	int value;
-	std::string valueString;
-	int min;
-	int max;
+	int value;							// The value
+	std::string valueString;			// The string version of 'value'
+	int min;							// Min boundary
+	int max;							// Max boundary
 
 public:
-	bool selected = false;
-	std::function<void()> onSelect;
-	std::function<void()> onDeselect;
+	bool selected = false;				// Bool which indicates if the valuebox is selected
+	std::function<void()> onSelect;		// Function pointer pointing to code to execute on select
+	std::function<void()> onDeselect;	// Function pointer pointing to code to execute on deselect
 
 
 	ValueBox();
