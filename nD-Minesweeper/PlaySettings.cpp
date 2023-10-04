@@ -29,6 +29,9 @@ int PlaySettings::getDimensions() const
  */
 void PlaySettings::setDimensions(int newDimensions)
 {
+	if (newDimensions <= 0)
+		return;
+
 	// Add new dimension sizes with default value if the new dimension is higher, else delete redundant dimension sizes
 	if (newDimensions > dimensions)
 	{
@@ -127,6 +130,9 @@ void PlaySettings::setBombs(int newBombs)
  */
 int PlaySettings::getMax() const
 {
+	if (dimensions == 0) 
+		return 0;
+
 	int total = 1;
 	for (int i = 0; i < dimensions; i++)
 		total *= dimensionSizes.at(i);
