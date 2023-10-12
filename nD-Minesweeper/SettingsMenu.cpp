@@ -1,19 +1,21 @@
 #include "SettingsMenu.h"
+#include "State.h"
 #include "Menu.h"
 #include "Playing.h"
+#include <exception>
 
 /**
  * Initializes the pregame settings page
  * 
  * @param settings previous settings if returning from game, else default settings
+ * @throw std::runtime_error on file not found
  */
-SettingsMenu::SettingsMenu(const PlaySettings settings)
+SettingsMenu::SettingsMenu(const PlaySettings& settings)
+    : playSettings(settings)
 {
     // Load files, exit game if unsuccesfull
     if (!textFont.loadFromFile("arial.ttf"))
-        Game::setState();
-
-    playSettings = settings;
+        throw std::runtime_error("File arial.ttf not found");
 
     // Menu text
     menutextLbl = Label(766, 200, "Game Settings", textFont, 60);
@@ -173,12 +175,12 @@ SettingsMenu::SettingsMenu(const PlaySettings settings)
 
     // Play button, loads the game
     playBtn = Button(860, 780, 200, 80, "Play", textFont, 40);
-    playBtn.onClick = [&]() { Game::setState(new Playing(playSettings)); };
+    playBtn.onClick = [&]() { State::set(std::make_unique<Playing>(playSettings)); };
     buttons.push_back(&playBtn);
 
     // Exit button, back to main menu
     exitBtn = Button(1860, 20, 40, 40, "x", textFont, 30);
-    exitBtn.onClick = []() { Game::setState(new Menu()); };
+    exitBtn.onClick = []() { State::set(std::make_unique<Menu>()); };
     buttons.push_back(&exitBtn);
 }
 
@@ -227,19 +229,16 @@ void SettingsMenu::draw(sf::RenderWindow& window)
  * 
  * @param key key that is pressed
  */
-void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
+void SettingsMenu::keyPressed(const sf::Keyboard::Key& key)
 {
     switch (key)
     {
-    // On 'Enter' load the game
     case sf::Keyboard::Enter:
-        Game::setState(new Playing(playSettings));
+        State::set(std::make_unique<Playing>(playSettings));
         break;
-    // On 'Escape' go back to main menu
     case sf::Keyboard::Escape:
-        Game::setState(new Menu());
+        State::set(std::make_unique<Menu>());
         break;
-    // On 'Backspace' remove a digit in the currently selected valuebox
     case sf::Keyboard::BackSpace:
         for (auto& valueBox : valueBoxes)
         {
@@ -250,8 +249,8 @@ void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
             }
         }
         break;
-    // On any other key, check if a digit has to be added to the currently selected valuebox
     default:
+        // Check if a digit has to be added to the currently selected valuebox
         for (auto& valueBox : valueBoxes)
         {
             if (valueBox->selected)
@@ -265,11 +264,21 @@ void SettingsMenu::keyPressed(const sf::Keyboard::Key key)
 }
 
 /**
+ * Handles key releases
+ * 
+ * @param key the key that is released
+ */
+void SettingsMenu::keyReleased(const sf::Keyboard::Key& key)
+{
+
+}
+
+/**
  * Handles mouse presses
  * 
- * @param event mouse event which has pressed mousebutton and mouse position
+ * @param mouse holds the pressed mousebutton and mouse position
  */
-void SettingsMenu::mousePressed(const sf::Event::MouseButtonEvent event)
+void SettingsMenu::mousePressed(const sf::Event::MouseButtonEvent& mouse)
 {
 
 }
@@ -277,14 +286,14 @@ void SettingsMenu::mousePressed(const sf::Event::MouseButtonEvent event)
 /**
  * Handles mouse releases
  *
- * @param event mouse event which has released mousebutton and mouse position
+ * @param mouse holds the released mousebutton and mouse position
  */
-void SettingsMenu::mouseReleased(const sf::Event::MouseButtonEvent event)
+void SettingsMenu::mouseReleased(const sf::Event::MouseButtonEvent& mouse)
 {
     // Check if a valuebox is selected, deselect all other valueboxes
     for (auto& valueBox : valueBoxes)
     {
-        if (valueBox->pointOnRect(event.x, event.y) && !valueBox->selected)
+        if (valueBox->pointOnRect(mouse.x, mouse.y) && !valueBox->selected)
             valueBox->select();
         else
             valueBox->deselect();
@@ -293,10 +302,20 @@ void SettingsMenu::mouseReleased(const sf::Event::MouseButtonEvent event)
     // Check if a button is pressed
     for (auto& button : buttons)
     {
-        if (button->pointOnRect(event.x, event.y))
+        if (button->pointOnRect(mouse.x, mouse.y))
         {
             button->onClick();
             break;
         }
     }
+}
+
+/**
+ * Handles mouse moves
+ * 
+ * @param mouse holds the mouseposition
+ */
+void SettingsMenu::mouseMoved(const sf::Event::MouseMoveEvent& mouse)
+{
+
 }

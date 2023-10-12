@@ -63,6 +63,9 @@
     <ClCompile Include="Tooltip.cpp">
       <Filter>Source Files\UIElements</Filter>
     </ClCompile>
+    <ClCompile Include="State.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Game.h">
@@ -100,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="Tooltip.h">
       <Filter>Header Files\UIElements</Filter>
+    </ClInclude>
+    <ClInclude Include="State.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

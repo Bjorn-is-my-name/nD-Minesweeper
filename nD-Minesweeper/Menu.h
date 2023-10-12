@@ -19,7 +19,9 @@ public:
 	Menu();
 	void update() override;
 	void draw(sf::RenderWindow& window) override;
-	void keyPressed(const sf::Keyboard::Key key) override;
-	void mousePressed(const sf::Event::MouseButtonEvent event) override;
-	void mouseReleased(const sf::Event::MouseButtonEvent event) override;
+	void keyPressed(const sf::Keyboard::Key& key) override;
+	void keyReleased(const sf::Keyboard::Key& key) override;
+	void mousePressed(const sf::Event::MouseButtonEvent& event) override;
+	void mouseReleased(const sf::Event::MouseButtonEvent& event) override;
+	void mouseMoved(const sf::Event::MouseMoveEvent& event) override;
 };

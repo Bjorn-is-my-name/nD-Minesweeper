@@ -1,27 +1,29 @@
 #include "Menu.h"
+#include "State.h"
 #include "SettingsMenu.h"
+#include <exception>
 
 /**
  * Initializes the main menu page
+ * 
+ * @throw std::runtime_error on file not found
  */
 Menu::Menu()
 {
     // Load files, exit game if unsuccesfull
     if (!textFont.loadFromFile("arial.ttf"))
-        Game::setState();
+        throw std::runtime_error("File arial.ttf not found");
 
     menutextLbl = Label(734, 200, "nD-Minesweeper", textFont, 60);
 
     // Play button to go to pregame menu
     playBtn = Button(860, 670, 200, 80, "Play", textFont, 40);
-    playBtn.onClick = []() {
-        Game::setState(new SettingsMenu());
-    };
+    playBtn.onClick = []() { State::set(std::make_unique<SettingsMenu>()); };
     buttons.push_back(&playBtn);
 
     // Exit button to exit the game
     exitBtn = Button(1860, 20, 40, 40, "x", textFont, 30);
-    exitBtn.onClick = []() { Game::setState(); };
+    exitBtn.onClick = []() { State::clear(); };
     buttons.push_back(&exitBtn);
 }
 
@@ -53,17 +55,15 @@ void Menu::draw(sf::RenderWindow& window)
  *
  * @param key key that is pressed
  */
-void Menu::keyPressed(const sf::Keyboard::Key key)
+void Menu::keyPressed(const sf::Keyboard::Key& key)
 {
     switch (key)
     {
-    // On 'Escape' exit the game
     case sf::Keyboard::Escape:
-        Game::setState();
+        State::clear();
         break;
-    // On 'Enter' go to the pregame menu
     case sf::Keyboard::Enter:
-        Game::setState(new SettingsMenu());
+        State::set(std::make_unique<SettingsMenu>());
         break;
     default:
         break;
@@ -71,11 +71,21 @@ void Menu::keyPressed(const sf::Keyboard::Key key)
 }
 
 /**
+ * Handles key releases
+ * 
+ * @param key the key that is released
+ */
+void Menu::keyReleased(const sf::Keyboard::Key& key)
+{
+
+}
+
+/**
  * Handles mouse presses
  *
- * @param event mouse event which has pressed mousebutton and mouse position
+ * @param mouse holds the pressed mousebutton and mouse position
  */
-void Menu::mousePressed(const sf::Event::MouseButtonEvent event)
+void Menu::mousePressed(const sf::Event::MouseButtonEvent& mouse)
 {
 
 }
@@ -83,17 +93,27 @@ void Menu::mousePressed(const sf::Event::MouseButtonEvent event)
 /**
  * Handles mouse releases
  *
- * @param event mouse event which has released mousebutton and mouse position
+ * @param mouse holds the released mousebutton and mouse position
  */
-void Menu::mouseReleased(const sf::Event::MouseButtonEvent event)
+void Menu::mouseReleased(const sf::Event::MouseButtonEvent& mouse)
 {
     // Check if a button is pressed
     for (auto& button : buttons)
     {
-        if (button->pointOnRect(event.x, event.y))
+        if (button->pointOnRect(mouse.x, mouse.y))
         {
             button->onClick();
             break;
         }
     }
+}
+
+/**
+ * Handles mouse moves
+ * 
+ * @param mouse holds the mouseposition
+ */
+void Menu::mouseMoved(const sf::Event::MouseMoveEvent& mouse)
+{
+    
 }

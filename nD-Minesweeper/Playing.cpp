@@ -1,5 +1,7 @@
 #include "Playing.h"
 #include "SettingsMenu.h"
+#include "State.h"
+#include <exception>
 #include <string>
 #include <cstdlib>
 #include <ctime>
@@ -8,15 +10,16 @@
  * Starts the game
  * 
  * @param playSettings settings with which to play
+ * @throw std::runtime_error on file not found
  */
-Playing::Playing(PlaySettings playSettings)
+Playing::Playing(const PlaySettings& playSettings)
     : playSettings(playSettings)
 {
     // Load files, exit game if unsuccesfull
     if (!flagTexture.loadFromFile("Flag.png"))
-        Game::setState(nullptr);
+        throw std::runtime_error("File Flag.png not found");
     if (!textFont.loadFromFile("arial.ttf"))
-        Game::setState(nullptr);
+        throw std::runtime_error("File arial.ttf not found");
 
     // Create the bar that houses the controls
     controlsRect.setPosition(0, 0);
@@ -43,7 +46,7 @@ Playing::Playing(PlaySettings playSettings)
 
     // Exit button to go back to pregame settings menu
     exitBtn = Button(1860, 20, 40, 40, "x", textFont, 30);
-    exitBtn.onClick = [&]() { Game::setState(new SettingsMenu(this->playSettings)); };
+    exitBtn.onClick = [&]() { State::set(std::make_unique<SettingsMenu>(this->playSettings)); };
     buttons.push_back(&exitBtn);
 
     // Position of the board (visual)
@@ -395,17 +398,15 @@ void Playing::drawNeighbors(sf::RenderWindow& window)
 /**
  * Handles key presses
  *
- * @param key key that is pressed
+ * @param key the key that is pressed
  */
-void Playing::keyPressed(const sf::Keyboard::Key key)
+void Playing::keyPressed(const sf::Keyboard::Key& key)
 {
     switch (key)
     {
-    // On 'Escape' go back to the pregame settings menu
     case sf::Keyboard::Escape:
-        Game::setState(new SettingsMenu(playSettings));
+        State::set(std::make_unique<SettingsMenu>(playSettings));
         break;
-    // On 'M' toggle moving mode on or off
     case sf::Keyboard::M:
         movingMode = !movingMode;
         if (movingMode)
@@ -419,11 +420,21 @@ void Playing::keyPressed(const sf::Keyboard::Key key)
 }
 
 /**
+ * Handles key releases
+ * 
+ * @param key the key that is released
+ */
+void Playing::keyReleased(const sf::Keyboard::Key& key)
+{
+
+}
+
+/**
  * Handles mouse presses
  *
- * @param event mouse event which has pressed mousebutton and mouse position
+ * @param mouse holds the pressed mousebutton and mouse position
  */
-void Playing::mousePressed(const sf::Event::MouseButtonEvent event)
+void Playing::mousePressed(const sf::Event::MouseButtonEvent& mouse)
 {
     
 }
@@ -431,31 +442,31 @@ void Playing::mousePressed(const sf::Event::MouseButtonEvent event)
 /**
  * Handles mouse releases
  *
- * @param event mouse event which has released mousebutton and mouse position
+ * @param mouse holds the released mousebutton and mouse position
  */
-void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
+void Playing::mouseReleased(const sf::Event::MouseButtonEvent& mouse)
 {
     // Check if a button is pressed
     for (auto& button : buttons)
     {
-        if (button->pointOnRect(event.x, event.y))
+        if (button->pointOnRect(mouse.x, mouse.y))
         {
             button->onClick();
             return;
         }
     }
 
-    switch (event.button)
+    switch (mouse.button)
     {
-    // On 'Mouse.Left' reveal the tile if not in moving mode
     case sf::Mouse::Left:
+        // Reveal the tile if not in moving mode
         if (movingMode)
             return;
 
         // Find the tile being clicked
         for (Tile& tile : board)
         {
-            if (tile.pointOnRect(event.x - boardOffset.x, event.y - boardOffset.y))
+            if (tile.pointOnRect(mouse.x - boardOffset.x, mouse.y - boardOffset.y))
             {
                 // On first click, generate the bombs
                 if (!firstTileClicked)
@@ -483,15 +494,15 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
             }
         }
         break;
-    // On 'Mouse.Right' flag or unflag the tile of not in moving mode
     case sf::Mouse::Right:
+        // Flag or unflag the tile of not in moving mode
         if (movingMode)
             return;
 
         // Find the tile being clicked
         for (Tile& tile : board)
         {
-            if (tile.pointOnRect(event.x - boardOffset.x, event.y - boardOffset.y) && !tile.isVisible())
+            if (tile.pointOnRect(mouse.x - boardOffset.x, mouse.y - boardOffset.y) && !tile.isVisible())
             {
                 // Change 'flagged' status to true or false based on old state
                 tile.setFlagged(!tile.isFlagged());
@@ -514,6 +525,16 @@ void Playing::mouseReleased(const sf::Event::MouseButtonEvent event)
     default:
         break;
     }
+}
+
+/**
+ * Handles mouse moves
+ * 
+ * @param mouse holds the mouseposition
+ */
+void Playing::mouseMoved(const sf::Event::MouseMoveEvent& mouse)
+{
+
 }
 
 /**
@@ -585,7 +606,7 @@ void Playing::generateBombs(Tile& tile)
  */
 void Playing::win()
 {
-    Game::setState(new SettingsMenu(playSettings));
+    State::set(std::make_unique<SettingsMenu>(playSettings));
 }
 
 /**
@@ -595,5 +616,5 @@ void Playing::win()
  */
 void Playing::lose()
 {
-    Game::setState(new SettingsMenu(playSettings));
+    State::set(std::make_unique<SettingsMenu>(playSettings));
 }

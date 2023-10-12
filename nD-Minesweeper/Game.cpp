@@ -1,10 +1,9 @@
 #include "Game.h"
+#include "State.h"
+#include <memory>
 #include "Menu.h"
 #include "Playing.h"
-
-// Initialize the static variable which holds the current gamestate
-std::unique_ptr<GameState> Game::state;
-
+#include <iostream>
 /**
  * Start everything needed for the application
  */
@@ -15,7 +14,7 @@ Game::Game()
     window.setFramerateLimit(60);
 
     // Open the main menu
-    setState(new Menu());
+    State::set(std::make_unique<Menu>());
 
     // Create the gameloop
     run();
@@ -27,7 +26,7 @@ Game::Game()
 void Game::run()
 {
     // Keep running as long as the window exists and a gamestate is loaded
-    while (window.isOpen() && state)
+    while (window.isOpen() && State::isSet())
     {
         handleEvents();
         update();
@@ -44,29 +43,32 @@ void Game::handleEvents()
 {
     sf::Event event;
 
-    // Check for events
     while (window.pollEvent(event))
     {
-        if (!state)
+        if (!State::isSet())
             return;
+
+        auto& state = State::get();
 
         switch (event.type)
         {
-        // On 'Closed' event, close the application
         case sf::Event::Closed:
             quit();
             break;
-        // On 'KeyPressed' event, pass the key to the active gamestate
         case sf::Event::KeyPressed:
-            state->keyPressed(event.key.code);
+            state.keyPressed(event.key.code);
             break;
-        // On 'MousePressed' event, pass the button and position to the active gamestate
+        case sf::Event::KeyReleased:
+            state.keyReleased(event.key.code);
+            break;
         case sf::Event::MouseButtonPressed:
-            state->mousePressed(event.mouseButton);
+            state.mousePressed(event.mouseButton);
             break;
-        // On 'MouseReleased' event, pass the button and position to the active gamestate
         case sf::Event::MouseButtonReleased:
-            state->mouseReleased(event.mouseButton);
+            state.mouseReleased(event.mouseButton);
+            break;
+        case sf::Event::MouseMoved:
+            state.mouseMoved(event.mouseMove);
             break;
         default:
             break;
@@ -79,10 +81,10 @@ void Game::handleEvents()
  */
 void Game::update()
 {
-    if (!state)
+    if (!State::isSet())
         return;
 
-    state->update();
+    State::get().update();
 }
 
 /**
@@ -90,10 +92,10 @@ void Game::update()
  */
 void Game::draw()
 {
-    if (!state)
+    if (!State::isSet())
         return;
 
-    state->draw(window);
+    State::get().draw(window);
     window.display();
 }
 
@@ -103,14 +105,4 @@ void Game::draw()
 void Game::quit()
 {
     window.close();
-}
-
-/**
- * Changes the gamestate
- * 
- * @param newState new state to be loaded, 'null' if no state is specified
- */
-void Game::setState(GameState* newState)
-{
-    state.reset(newState);
 }

@@ -47,10 +47,12 @@ private:
 	int selectedExtraSpace;				// Current extra space between dimension setting
 
 public:
-	SettingsMenu(const PlaySettings playSettings = PlaySettings());
+	SettingsMenu(const PlaySettings& playSettings = PlaySettings());
 	void update() override;
 	void draw(sf::RenderWindow& window) override;
-	void keyPressed(const sf::Keyboard::Key key) override;
-	void mousePressed(const sf::Event::MouseButtonEvent event) override;
-	void mouseReleased(const sf::Event::MouseButtonEvent event) override;
+	void keyPressed(const sf::Keyboard::Key& key) override;
+	void keyReleased(const sf::Keyboard::Key& key) override;
+	void mousePressed(const sf::Event::MouseButtonEvent& mouse) override;
+	void mouseReleased(const sf::Event::MouseButtonEvent& mouse) override;
+	void mouseMoved(const sf::Event::MouseMoveEvent& mouse) override;
 };
